@@ -378,3 +378,4 @@ ruby rt { font-size: 0.55em; font-weight: 500; color: var(--muted); letter-spaci
 :focus-visible { outline: 3px solid #1f1a17; outline-offset: 2px; }
 /* Cards sit in a fixed-size foreignObject, so draw the ring inside the card. */
 .card:focus-visible { outline: 3px solid #1f1a17; outline-offset: -7px; }
+.relatives.top { margin: 0 0 1rem; padding: 0 0 1rem; border-top: none; border-bottom: 1px solid var(--border); }

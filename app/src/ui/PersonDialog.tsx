@@ -57,6 +57,8 @@ export function PersonDialog(props: Props) {
 
   return (
     <Modal title={title} subtitle={kinLabel && egoId !== person?.id ? `${nameOf(persons.get(egoId!))} から見て：${kinLabel}` : undefined} onClose={props.onClose}>
+      {/* Opening an existing person is mostly done to add relatives, so that comes first and gets focus. */}
+      {person && <AddRelatives file={file} person={person} persons={persons} onAdd={props.onAdd} />}
       <PersonForm
         key={state.kind === 'edit' ? state.id : `${state.relation}-${state.baseId}`}
         initial={person ? stripPerson(person) : state.kind === 'add' ? (state.preset ?? {}) : {}}
@@ -65,7 +67,7 @@ export function PersonDialog(props: Props) {
       />
       {person && (
         <>
-          <Relatives file={file} person={person} persons={persons} onAdd={props.onAdd} onUnionStatus={props.onUnionStatus} />
+          <Marriages file={file} person={person} persons={persons} onUnionStatus={props.onUnionStatus} />
           <Repair
             file={file}
             person={person}
@@ -111,13 +113,7 @@ function stripPerson(p: Person): PersonFields {
 
 // ---- relatives section -------------------------------------------------------
 
-function Relatives(props: {
-  file: FamilyFile;
-  person: Person;
-  persons: Map<string, Person>;
-  onAdd: (s: DialogState) => void;
-  onUnionStatus: (unionId: string, status: Union['status']) => void;
-}) {
+function AddRelatives(props: { file: FamilyFile; person: Person; persons: Map<string, Person>; onAdd: (s: DialogState) => void }) {
   const { file, person, persons, onAdd } = props;
   const parents = parentCount(file, person.id);
   const unions = file.unions.filter((u) => u.partners.includes(person.id));
@@ -134,9 +130,9 @@ function Relatives(props: {
   ];
 
   return (
-    <section class="relatives">
-      <h3>家族を追加</h3>
-      <div class="chips">
+    <section class="relatives top" aria-labelledby="add-relatives-title">
+      <h3 id="add-relatives-title">家族を追加</h3>
+      <div class="chips" data-autofocus>
         <button type="button" disabled={parents >= 2} onClick={() => add('parent', { gender: 'M' })}>
           ＋ 父
         </button>
@@ -157,25 +153,39 @@ function Relatives(props: {
       </div>
       {parents >= 2 && <p class="hint">親はすでに2人登録されています。</p>}
       {!canAddSpouse && <p class="hint">婚姻関係は1人につき2つまでです。</p>}
-      {marriages.length > 0 && (
-        <>
-          <h3>婚姻関係</h3>
-          <ul class="marriages">
-            {marriages.map((u) => (
-              <li key={u.id}>
-                <span>{nameOf(partnerOf(u))}</span>
-                <select
-                  value={u.status}
-                  onChange={(e) => props.onUnionStatus(u.id, (e.target as HTMLSelectElement).value as Union['status'])}
-                >
-                  <option value="current">現在の配偶者</option>
-                  <option value="former">元配偶者</option>
-                </select>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+    </section>
+  );
+}
+
+/** Current / former status of each marriage. */
+function Marriages(props: {
+  file: FamilyFile;
+  person: Person;
+  persons: Map<string, Person>;
+  onUnionStatus: (unionId: string, status: Union['status']) => void;
+}) {
+  const { file, person, persons } = props;
+  const marriages = file.unions.filter((u) => u.partners.includes(person.id) && u.partners.filter(Boolean).length === 2);
+  const partnerOf = (u: Union) => persons.get(u.partners.find((p) => p && p !== person.id)!);
+  if (!marriages.length) return null;
+  return (
+    <section class="relatives">
+      <h3>婚姻関係</h3>
+      <ul class="marriages">
+        {marriages.map((u) => (
+          <li key={u.id}>
+            <span>{nameOf(partnerOf(u))}</span>
+            <select
+              value={u.status}
+              aria-label={`${nameOf(partnerOf(u))} との婚姻関係`}
+              onChange={(e) => props.onUnionStatus(u.id, (e.target as HTMLSelectElement).value as Union['status'])}
+            >
+              <option value="current">現在の配偶者</option>
+              <option value="former">元配偶者</option>
+            </select>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

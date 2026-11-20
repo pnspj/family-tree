@@ -6,7 +6,8 @@ const FOCUSABLE =
 
 /**
  * Accessible modal dialog:
- * - focuses `[data-autofocus]`, else the first form field, else the first button in the body
+ * - focuses `[data-autofocus]` (or the first enabled control inside a marked container),
+ *   else the first form field, else the first button in the body
  * - keeps Tab / Shift+Tab inside the dialog, closes on Escape
  * - on close, gives focus back to the element that had it before (when it still exists),
  *   unless the parent moves focus somewhere more useful itself.
@@ -17,8 +18,9 @@ export function Modal(props: { title: string; subtitle?: string; onClose: () => 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     const body = ref.current!.querySelector('.modal-body')!;
+    const marked = body.querySelector<HTMLElement>('[data-autofocus]');
     const first =
-      body.querySelector<HTMLElement>('[data-autofocus]') ??
+      (marked && (marked.matches(FOCUSABLE) ? marked : marked.querySelector<HTMLElement>(FOCUSABLE))) ??
       body.querySelector<HTMLElement>('input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])') ??
       body.querySelector<HTMLElement>('button:not([disabled])') ??
       ref.current!.querySelector<HTMLElement>('button');
