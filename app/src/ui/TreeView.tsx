@@ -4,6 +4,7 @@ import { select } from 'd3-selection';
 import { zoom as d3zoom, zoomIdentity, zoomTransform, type ZoomBehavior } from 'd3-zoom';
 import type { FamilyFile } from '../core/types';
 import type { ViewPrefs } from '../storage';
+import { NAV_KEYS, neighborCard, type NavKey } from './cardNav';
 import { TreeContent, useTreeModel, type CardHidden } from './TreeDrawing';
 
 /** What is currently hidden on each card (mask mode). */
@@ -66,10 +67,11 @@ export function TreeView({ file, prefs, hidden, cardClass, onCardClick, fitReque
     select(svg).call(z.transform, t);
   }, [fitRequest]);
 
-  useEffect(() => {
+  /** Focuses a person's card and pans it into view when it is (partly) off screen. */
+  const focusCard = (id: string) => {
     const svg = svgRef.current!;
     const z = zoomRef.current;
-    const card = focusRequest && svg.querySelector<HTMLElement>(`[data-person-id="${CSS.escape(focusRequest.id)}"]`);
+    const card = svg.querySelector<HTMLElement>(`[data-person-id="${CSS.escape(id)}"]`);
     if (!card || !z) return;
     card.focus({ preventScroll: true });
     // Pan (keeping the zoom level) when the card is not fully visible.
@@ -82,10 +84,31 @@ export function TreeView({ file, prefs, hidden, cardClass, onCardClick, fitReque
       const t = zoomTransform(svg);
       select(svg).call(z.transform, zoomIdentity.translate(t.x + dx, t.y + dy).scale(t.k));
     }
+  };
+
+  useEffect(() => {
+    if (focusRequest) focusCard(focusRequest.id);
   }, [focusRequest]);
 
+  // Arrow keys / Home / End move between cards as they are laid out (computed from the
+  // current layout on each key press, so it follows additions and deletions).
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (!NAV_KEYS.includes(e.key) || e.altKey || e.ctrlKey || e.metaKey) return;
+    const id = (e.target as Element).closest?.('[data-person-id]')?.getAttribute('data-person-id');
+    if (!id) return;
+    e.preventDefault();
+    const next = neighborCard(layout.cards, id, e.key as NavKey);
+    if (next) focusCard(next);
+  };
+
   return (
-    <svg ref={svgRef} class={`tree script-${prefs.script}`} role="img" aria-label="家系図">
+    <svg
+      ref={svgRef}
+      class={`tree script-${prefs.script}`}
+      role="group"
+      aria-label="家系図（矢印キーでカードを移動）"
+      onKeyDown={onKeyDown}
+    >
       <g ref={gRef}>
         <TreeContent file={file} prefs={prefs} model={model} hidden={hidden} cardClass={cardClass} onCardClick={onCardClick} />
       </g>
