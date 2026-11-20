@@ -221,8 +221,13 @@ svg.tree:active { cursor: grabbing; }
 .label-toolbar input { flex: 1; }
 .label-table-wrap { overflow-x: auto; }
 .label-table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
-.label-table th, .label-table td { padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
-.label-table input { width: 9em; font-size: 0.9rem; }
+/* Long standard labels wrap and inputs fill their column, so the table never gets wider than the
+   dialog (fixed widths + nowrap overflowed by a few px with wider Windows fonts). */
+.label-table th, .label-table td { padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+.label-table th { white-space: nowrap; }
+.label-table td:nth-child(2), .label-table td:nth-child(4) { width: 26%; }
+.label-table td:last-child { white-space: nowrap; }
+.label-table input { width: 100%; min-width: 6em; font-size: 0.9rem; }
 .label-table tr.changed td { background: var(--accent-soft); }
 
 .errors { padding-left: 1.2em; color: var(--danger); }
@@ -358,3 +363,12 @@ ruby rt { font-size: 0.55em; font-weight: 500; color: var(--muted); letter-spaci
 @keyframes pulse { 50% { transform: scale(1.04); } }
 @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 @media (prefers-reduced-motion: reduce) { .card.quiz-target, .card.quiz-wrong { animation: none; } }
+
+/* Phones: each label becomes a small 2-column grid (standard wording | custom wording). */
+@media (max-width: 600px) {
+  .label-table thead { display: none; }
+  .label-table tr { display: grid; grid-template-columns: minmax(5em, 40%) 1fr; gap: 0.3rem 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+  .label-table td { display: block; border: none; padding: 0; width: auto !important; }
+  .label-table td:last-child { grid-column: 1 / -1; text-align: right; }
+  .label-table td:last-child:empty { display: none; }
+}
