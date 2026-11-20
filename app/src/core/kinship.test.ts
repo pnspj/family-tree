@@ -150,3 +150,36 @@ describe('furigana readings', () => {
     expect(kk.resolve('ren', 'kenichi')?.ruby).toBe('お父ちゃん');
   });
 });
+
+describe('siblings whose parents are not registered yet', () => {
+  // 太郎 and 花子 are siblings (shared union without partners); 一郎 is 太郎's son, 二郎 is 花子's son.
+  const data: FamilyData = {
+    persons: [
+      { id: 'taro', gender: 'M', birth: { y: 1980 }, childOf: 'u_sib' },
+      { id: 'hanako', gender: 'F', birth: { y: 1983 }, childOf: 'u_sib' },
+      { id: 'ichiro', gender: 'M', birth: { y: 2010 }, childOf: 'u_taro' },
+      { id: 'jiro', gender: 'M', birth: { y: 2012 }, childOf: 'u_hanako' },
+    ],
+    unions: [
+      { id: 'u_sib', partners: [null, null], status: 'current' },
+      { id: 'u_taro', partners: ['taro', null], status: 'current' },
+      { id: 'u_hanako', partners: ['hanako', null], status: 'current' },
+    ],
+  };
+  const kk = createKinship(data);
+  const kanji = (a: string, b: string) => kk.resolve(a, b)?.kanji;
+
+  it('are siblings to each other', () => {
+    expect(kanji('taro', 'hanako')).toBe('妹');
+    expect(kanji('hanako', 'taro')).toBe('兄');
+  });
+  it('make their children nephews / cousins', () => {
+    expect(kanji('ichiro', 'hanako')).toBe('叔母'); // younger than 一郎's father
+    expect(kanji('hanako', 'ichiro')).toBe('甥');
+    expect(kanji('ichiro', 'jiro')).toBe('従弟');
+  });
+  it('carry no paternal / maternal side through the unknown parents', () => {
+    expect(kk.resolve('ichiro', 'hanako')?.side).toBe('paternal'); // via 太郎 (father)
+    expect(kk.resolve('taro', 'hanako')?.side).toBeUndefined();
+  });
+});

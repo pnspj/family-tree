@@ -41,11 +41,19 @@ export function createKinship(data: FamilyData, overrides: Record<string, LabelO
   for (const p of data.persons)
     if (p.childOf) childrenOf.set(p.childOf, [...(childrenOf.get(p.childOf) ?? []), p.id]);
 
+  // Siblings whose parents are not registered yet share a union without partners. That union
+  // stands in as a virtual parent node, so they are still siblings (and their children cousins).
+  const VIRTUAL = '#union:';
   const parentsOf = (id: string) => {
     const cu = persons.get(id)?.childOf;
-    return cu ? unions.get(cu)!.partners.filter((p): p is string => !!p) : [];
+    if (!cu) return [];
+    const known = unions.get(cu)!.partners.filter((p): p is string => !!p);
+    return known.length ? known : [VIRTUAL + cu];
   };
-  const childrenOfPerson = (id: string) => (unionsOf.get(id) ?? []).flatMap((u) => childrenOf.get(u.id) ?? []);
+  const childrenOfPerson = (id: string) =>
+    id.startsWith(VIRTUAL)
+      ? (childrenOf.get(id.slice(VIRTUAL.length)) ?? [])
+      : (unionsOf.get(id) ?? []).flatMap((u) => childrenOf.get(u.id) ?? []);
   const spousesOf = (id: string, status?: Union['status']) =>
     (unionsOf.get(id) ?? [])
       .filter((u) => !status || u.status === status)

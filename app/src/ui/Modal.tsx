@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
@@ -15,7 +15,8 @@ const FOCUSABLE =
 export function Modal(props: { title: string; subtitle?: string; onClose: () => void; children: ComponentChildren; wide?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // Layout effect: focus moves before the browser paints, so keys typed right away aren't lost.
+  useLayoutEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     const body = ref.current!.querySelector('.modal-body')!;
     const marked = body.querySelector<HTMLElement>('[data-autofocus]');
