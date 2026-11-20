@@ -123,23 +123,18 @@ export function computeLayout(data: FamilyData, opt: LayoutOptions = DEFAULT_LAY
 
   // ---- 3. ordering ----------------------------------------------------------
   type Rows = Map<number, Unit[]>;
+  /** Rows of a unit's subtree plus, for rows above the unit, how many items lie left of its column. */
+  type Block = { rows: Rows; split: Map<number, number> };
   const visitedUnits = new Set<Unit>();
   const visitedFamilies = new Set<string>();
   const birthIndex = (id: string) => {
     const p = idx.persons.get(id)!;
     return p.childOf ? idx.childrenOf.get(p.childOf)!.findIndex((c) => c.id === id) : 0;
   };
-  const assemble = (blocks: Rows[], orderFor: (r: number) => (Rows | 'self')[], self?: Unit): Rows => {
+  const assemble = (blocks: Rows[], orderFor: (r: number) => Rows[]): Rows => {
     const out: Rows = new Map();
-    const allRows = new Set(blocks.flatMap((b) => [...b.keys()]));
-    if (self) allRows.add(self.gen);
-    for (const r of allRows) {
-      const list: Unit[] = [];
-      for (const b of orderFor(r)) {
-        if (b === 'self') {
-          if (self && r === self.gen) list.push(self);
-        } else list.push(...(b.get(r) ?? []));
-      }
+    for (const r of new Set(blocks.flatMap((b) => [...b.keys()]))) {
+      const list = orderFor(r).flatMap((b) => b.get(r) ?? []);
       if (list.length) out.set(r, list);
     }
     return out;
@@ -147,7 +142,7 @@ export function computeLayout(data: FamilyData, opt: LayoutOptions = DEFAULT_LAY
 
   // `fromChildOf`: entered from the union one member is a child of.
   // `fromParentOf`: entered from one of this unit's unions (coming up from a child).
-  function visitUnit(unit: Unit, fromChildOf?: string, fromParentOf?: string): Rows {
+  function visitUnit(unit: Unit, fromChildOf?: string, fromParentOf?: string): Block {
     visitedUnits.add(unit);
     const g = unit.gen;
     const fromMember = fromChildOf ? unit.members.find((m) => idx.persons.get(m)!.childOf === fromChildOf) : undefined;
@@ -171,7 +166,7 @@ export function computeLayout(data: FamilyData, opt: LayoutOptions = DEFAULT_LAY
       if (side === 'left') left.unshift(block);
       else right.push(block);
     });
-    const below: Rows[] = [];
+    const below: Block[] = [];
     const posOf = (u: Union) => mean(u.partners.filter((p): p is string => !!p).map((p) => unit.members.indexOf(p)))!;
     const ownUnions = [...new Set(unit.members.flatMap((m) => idx.unionsOf.get(m) ?? []))].sort((a, b) => posOf(a) - posOf(b));
     for (const u of ownUnions) {
@@ -182,16 +177,45 @@ export function computeLayout(data: FamilyData, opt: LayoutOptions = DEFAULT_LAY
         if (!visitedUnits.has(cu)) below.push(visitUnit(cu, u.id));
       }
     }
-    // Child blocks may reach rows <= g (e.g. parents of a child's spouse).
-    const half = Math.ceil(below.length / 2);
-    return assemble(
-      [...left, ...below, ...right],
-      (r) =>
-        r <= g
-          ? [...left, ...below.slice(0, half), 'self', ...below.slice(half), ...right]
-          : [...left, ...below, ...right],
-      unit,
-    );
+    // Child blocks can reach rows <= g (e.g. the parents of a child's spouse). Content of
+    // the left-half children goes left of this unit and of the right-half children right;
+    // a middle child's content is split at its own column, so a spouse's family stays on
+    // the spouse's side.
+    const n = below.length;
+    const upperParts = (r: number): [Unit[], Unit[]] => {
+      const before: Unit[] = [];
+      const after: Unit[] = [];
+      below.forEach((b, i) => {
+        const items = b.rows.get(r) ?? [];
+        if (n % 2 === 1 && i === (n - 1) / 2) {
+          const s = b.split.get(r) ?? 0;
+          before.push(...items.slice(0, s));
+          after.push(...items.slice(s));
+        } else if (i < n / 2) before.push(...items);
+        else after.push(...items);
+      });
+      return [before, after];
+    };
+    const rows: Rows = new Map();
+    const split = new Map<number, number>();
+    const allRows = new Set([
+      g,
+      ...[...left, ...right].flatMap((b) => [...b.keys()]),
+      ...below.flatMap((b) => [...b.rows.keys()]),
+    ]);
+    for (const r of allRows) {
+      const L = left.flatMap((b) => b.get(r) ?? []);
+      const R = right.flatMap((b) => b.get(r) ?? []);
+      let list: Unit[];
+      if (r > g) list = [...L, ...below.flatMap((b) => b.rows.get(r) ?? []), ...R];
+      else {
+        const [before, after] = upperParts(r);
+        list = r === g ? [...L, ...before, unit, ...after, ...R] : [...L, ...before, ...after, ...R];
+        split.set(r, L.length + before.length);
+      }
+      if (list.length) rows.set(r, list);
+    }
+    return { rows, split };
   }
 
   // Visit union `pu` coming up from its child `anchor`; everything goes to `side` of the anchor.
@@ -201,12 +225,12 @@ export function computeLayout(data: FamilyData, opt: LayoutOptions = DEFAULT_LAY
     const partner = idx.unions.get(pu)!.partners.find((p): p is string => !!p);
     const parentUnit = partner ? unitOf.get(partner)! : undefined;
     const parentBlock: Rows =
-      parentUnit && !visitedUnits.has(parentUnit) ? visitUnit(parentUnit, undefined, pu) : new Map();
+      parentUnit && !visitedUnits.has(parentUnit) ? visitUnit(parentUnit, undefined, pu).rows : new Map();
     const sibBlocks: Rows[] = [];
     for (const c of idx.childrenOf.get(pu)!) {
       const cu = unitOf.get(c.id)!;
       if (c.id === anchor || visitedUnits.has(cu)) continue;
-      sibBlocks.push(visitUnit(cu, pu));
+      sibBlocks.push(visitUnit(cu, pu).rows);
     }
     return assemble([parentBlock, ...sibBlocks], (r) =>
       side === 'right'
@@ -238,7 +262,7 @@ export function computeLayout(data: FamilyData, opt: LayoutOptions = DEFAULT_LAY
     const rest = units.filter((u) => !visitedUnits.has(u));
     const top = Math.min(...rest.map((u) => u.gen));
     const root = rest.filter((u) => u.gen === top).sort((a, b) => descendants(b) - descendants(a))[0];
-    for (const [r, list] of visitUnit(root)) rows[r].push(...list);
+    for (const [r, list] of visitUnit(root).rows) rows[r].push(...list);
   }
 
   // ---- 4. x positioning -----------------------------------------------------
