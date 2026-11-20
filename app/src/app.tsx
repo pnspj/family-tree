@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import * as ops from './core/ops';
 import { sampleFile } from './core/sample';
 import type { FamilyFile } from './core/types';
@@ -15,6 +15,8 @@ import { isKana, personName } from './ui/display';
 type Mode = 'view' | 'quiz' | 'edit';
 type BoolPref = { [K in keyof ViewPrefs]: ViewPrefs[K] extends boolean ? K : never }[keyof ViewPrefs];
 const EMPTY = ops.emptyFile();
+/** Each dialog state mounts a fresh dialog, so focus starts at its first field again. */
+const dialogKey = (d: DialogState) => (d.kind === 'edit' ? `edit-${d.id}` : `add-${d.relation}-${d.baseId ?? ''}-${d.unionId ?? ''}`);
 type Confirm = { message: string; action: () => void } | null;
 
 export function App() {
@@ -24,6 +26,9 @@ export function App() {
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [showLabels, setShowLabels] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
+  const [focusRequest, setFocusRequest] = useState<{ id: string } | null>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const focusCard = (id: string | undefined) => id && setFocusRequest({ id });
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [importErrors, setImportErrors] = useState<string[] | null>(null);
@@ -50,7 +55,11 @@ export function App() {
     const onDown = (e: PointerEvent) => {
       if (!(e.target as Element).closest?.('.menu-wrap')) setMenuOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setMenuOpen(false);
+      menuButton.current?.focus();
+    };
     document.addEventListener('pointerdown', onDown);
     window.addEventListener('keydown', onKey);
     return () => {
@@ -94,7 +103,15 @@ export function App() {
     guardReplace(() => replaceFile(r.file));
   };
   const openImport = () => fileInput.current?.click();
-  const closeDialog = useCallback(() => setDialog(null), []);
+  // Cancelling a person dialog returns focus to the card it was opened from.
+  const closeDialog = () => {
+    if (dialog) focusCard(dialog.kind === 'edit' ? dialog.id : dialog.baseId);
+    setDialog(null);
+  };
+  const closeMenuDialog = (close: () => void) => () => {
+    close();
+    requestAnimationFrame(() => menuButton.current?.focus());
+  };
 
   if (file === undefined) return <div class="loading">読み込み中…</div>;
 
@@ -115,7 +132,7 @@ export function App() {
             >
               続ける
             </button>
-            <button type="button" onClick={() => setConfirm(null)}>
+            <button type="button" data-autofocus onClick={() => setConfirm(null)}>
               やめる
             </button>
           </div>
@@ -159,6 +176,7 @@ export function App() {
         <p class="hint">データはこのブラウザの中だけに保存され、どこにも送信されません。</p>
         {dialog && (
           <PersonDialog
+            key={dialogKey(dialog)}
             file={startFile}
             state={dialog}
             script={prefs.script}
@@ -168,6 +186,7 @@ export function App() {
               if (r.ok) {
                 replaceFile(r.file);
                 setMode('edit');
+                focusCard(r.personId); // Enter on the card opens it to add the next person
               }
             }}
             onAdd={setDialog}
@@ -215,7 +234,10 @@ export function App() {
   const onSave = (fields: ops.PersonFields) => {
     if (!dialog) return;
     if (dialog.kind === 'edit') {
-      if (apply(ops.updatePerson(file, dialog.id, fields))) setDialog(null);
+      if (apply(ops.updatePerson(file, dialog.id, fields))) {
+        setDialog(null);
+        focusCard(dialog.id);
+      }
       return;
     }
     const base = dialog.baseId!;
@@ -227,7 +249,10 @@ export function App() {
           : dialog.relation === 'child'
             ? ops.addChild(file, base, fields, dialog.unionId)
             : ops.addSibling(file, base, fields);
-    if (apply(r)) setDialog(null);
+    if (apply(r)) {
+      setDialog(null);
+      focusCard(r.personId); // the new person's card, ready for Enter -> add the next one
+    }
   };
 
   return (
@@ -287,7 +312,7 @@ export function App() {
           全体を表示
         </button>
         <div class="menu-wrap">
-          <button type="button" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>
+          <button ref={menuButton} type="button" aria-expanded={menuOpen} aria-haspopup="true" onClick={() => setMenuOpen((o) => !o)}>
             メニュー ▾
           </button>
           {menuOpen && (
@@ -359,10 +384,12 @@ export function App() {
           cardClass={mode === 'quiz' ? quiz.cardClass : undefined}
           onCardClick={onCardClick}
           fitRequest={fitRequest}
+          focusRequest={focusRequest}
         />
       </main>
       {dialog && (
         <PersonDialog
+          key={dialogKey(dialog)}
           file={file}
           state={dialog}
           script={prefs.script}
@@ -370,10 +397,17 @@ export function App() {
           onSave={onSave}
           onAdd={setDialog}
           onSetEgo={(id) => {
-            if (apply(ops.setEgo(file, id))) setDialog(null);
+            if (apply(ops.setEgo(file, id))) {
+              setDialog(null);
+              focusCard(id);
+            }
           }}
           onDelete={(id) => {
-            if (apply(ops.deletePerson(file, id))) setDialog(null);
+            const r = ops.deletePerson(file, id);
+            if (apply(r)) {
+              setDialog(null);
+              if (r.ok) focusCard(r.file.settings.egoId);
+            }
           }}
           onUnionStatus={(uid, status) => apply(ops.setUnionStatus(file, uid, status))}
           onSetParents={(pid, uid) => {
@@ -384,12 +418,12 @@ export function App() {
           }}
         />
       )}
-      {showPrint && <PrintDialog file={file} prefs={prefs} onClose={() => setShowPrint(false)} />}
+      {showPrint && <PrintDialog file={file} prefs={prefs} onClose={closeMenuDialog(() => setShowPrint(false))} />}
       {showLabels && (
         <LabelSettings
           overrides={file.settings.labelOverrides}
           onChange={(id, o) => apply(ops.setLabelOverride(file, id, o))}
-          onClose={() => setShowLabels(false)}
+          onClose={closeMenuDialog(() => setShowLabels(false))}
         />
       )}
       {hiddenInput}

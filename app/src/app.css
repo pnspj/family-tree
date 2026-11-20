@@ -372,3 +372,9 @@ ruby rt { font-size: 0.55em; font-weight: 500; color: var(--muted); letter-spaci
   .label-table td:last-child { grid-column: 1 / -1; text-align: right; }
   .label-table td:last-child:empty { display: none; }
 }
+
+/* ---- keyboard focus ---- */
+/* Dark ring: distinct from the blue / pink / grey card borders and the orange accent. */
+:focus-visible { outline: 3px solid #1f1a17; outline-offset: 2px; }
+/* Cards sit in a fixed-size foreignObject, so draw the ring inside the card. */
+.card:focus-visible { outline: 3px solid #1f1a17; outline-offset: -7px; }

@@ -76,7 +76,8 @@ export function TreeContent({ file, prefs, model, hidden, blanks, cardClass, onC
           <path key={`m${i}`} d={l.d} class={l.former ? 'former' : ''} />
         ))}
       </g>
-      {layout.cards.map((c) => {
+      {/* DOM order = visual order (top row first, left to right), so Tab moves as you read. */}
+      {[...layout.cards].sort((a, b) => a.y - b.y || a.x - b.x).map((c) => {
         const p = persons.get(c.id)!;
         const k = ego && prefs.showKinship ? kin.resolve(ego, c.id, { pathFallback: prefs.pathFallback }) : undefined;
         const kinText = kinshipText(k, prefs);
@@ -131,7 +132,14 @@ export function TreeContent({ file, prefs, model, hidden, blanks, cardClass, onC
         return (
           <foreignObject key={c.id} x={c.x} y={c.y} width={opt.cardW} height={opt.cardH}>
             {onCardClick ? (
-              <button type="button" class={cls} aria-label={label} title={hideName ? undefined : fullName} onClick={() => onCardClick(c.id)}>
+              <button
+                type="button"
+                class={cls}
+                data-person-id={c.id}
+                aria-label={label}
+                title={hideName ? undefined : fullName}
+                onClick={() => onCardClick(c.id)}
+              >
                 {body}
               </button>
             ) : (

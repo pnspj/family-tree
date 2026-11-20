@@ -1,7 +1,7 @@
 // Interactive (pan / zoom / tap) tree view.
 import { useEffect, useRef } from 'preact/hooks';
 import { select } from 'd3-selection';
-import { zoom as d3zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom';
+import { zoom as d3zoom, zoomIdentity, zoomTransform, type ZoomBehavior } from 'd3-zoom';
 import type { FamilyFile } from '../core/types';
 import type { ViewPrefs } from '../storage';
 import { TreeContent, useTreeModel, type CardHidden } from './TreeDrawing';
@@ -22,6 +22,8 @@ interface Props {
   onCardClick: (id: string) => void;
   /** A new object re-fits the view. `whole`: always show everything; otherwise focus the ego when too small. */
   fitRequest: { whole: boolean };
+  /** A new object moves keyboard focus to that person's card (panning it into view). */
+  focusRequest?: { id: string } | null;
 }
 
 const PAD = 40;
@@ -31,7 +33,7 @@ export const isNameHidden = (m: MaskState | null, id: string, egoId?: string) =>
 export const isKinshipHidden = (m: MaskState | null, id: string, egoId?: string) =>
   !!m?.kinship && id !== egoId && !m.revealedKinship.has(id);
 
-export function TreeView({ file, prefs, hidden, cardClass, onCardClick, fitRequest }: Props) {
+export function TreeView({ file, prefs, hidden, cardClass, onCardClick, fitRequest, focusRequest }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<SVGGElement>(null);
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
@@ -63,6 +65,24 @@ export function TreeView({ file, prefs, hidden, cardClass, onCardClick, fitReque
     }
     select(svg).call(z.transform, t);
   }, [fitRequest]);
+
+  useEffect(() => {
+    const svg = svgRef.current!;
+    const z = zoomRef.current;
+    const card = focusRequest && svg.querySelector<HTMLElement>(`[data-person-id="${CSS.escape(focusRequest.id)}"]`);
+    if (!card || !z) return;
+    card.focus({ preventScroll: true });
+    // Pan (keeping the zoom level) when the card is not fully visible.
+    const view = svg.getBoundingClientRect();
+    const r = card.getBoundingClientRect();
+    const margin = 16;
+    if (r.left < view.left + margin || r.right > view.right - margin || r.top < view.top + margin || r.bottom > view.bottom - margin) {
+      const dx = view.left + view.width / 2 - (r.left + r.width / 2);
+      const dy = view.top + view.height / 2 - (r.top + r.height / 2);
+      const t = zoomTransform(svg);
+      select(svg).call(z.transform, zoomIdentity.translate(t.x + dx, t.y + dy).scale(t.k));
+    }
+  }, [focusRequest]);
 
   return (
     <svg ref={svgRef} class={`tree script-${prefs.script}`} role="img" aria-label="家系図">
