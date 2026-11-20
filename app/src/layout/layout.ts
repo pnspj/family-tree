@@ -305,6 +305,34 @@ export function computeLayout(data: FamilyData, opt: LayoutOptions = DEFAULT_LAY
     row.forEach((u, i) => (u.x = xs[i]));
   };
   for (let iter = 0; iter < 150; iter++) (iter % 2 === 0 ? rows : [...rows].reverse()).forEach(relaxRow);
+
+  // The damped relaxation stops a few px short of alignment. Finish top-down: an only child's
+  // unit moves under its parents as far as the free space next to it allows, without pushing
+  // anyone (siblings hang from a horizontal bus where small offsets are invisible, and pushing
+  // neighbours would just move the kink elsewhere). Parents are final when a row is processed.
+  const parentShift = (unit: Unit) =>
+    mean(
+      unit.members.flatMap((m) => {
+        const pu = idx.persons.get(m)!.childOf;
+        const uc = pu ? unionCenter(idx.unions.get(pu)!) : undefined;
+        return uc === undefined ? [] : [uc - center(m)];
+      }),
+    ) ?? 0;
+  const isOnlyChildUnit = (unit: Unit) => {
+    const withParents = unit.members.filter((m) => idx.persons.get(m)!.childOf);
+    if (withParents.length !== 1) return false;
+    const pu = idx.persons.get(withParents[0])!.childOf!;
+    return idx.childrenOf.get(pu)!.length === 1 && unionCenter(idx.unions.get(pu)!) !== undefined;
+  };
+  for (const row of rows) {
+    row.forEach((u, i) => {
+      if (!isOnlyChildUnit(u)) return;
+      const lo = i > 0 ? row[i - 1].x + unitWidth(row[i - 1]) + unitGap : -Infinity;
+      const hi = i < row.length - 1 ? row[i + 1].x - unitWidth(u) - unitGap : Infinity;
+      u.x = Math.min(hi, Math.max(lo, u.x + parentShift(u)));
+    });
+  }
+
   const minX = Math.min(...units.map((u) => u.x));
   units.forEach((u) => (u.x -= minX));
 
@@ -368,19 +396,20 @@ export function computeLayout(data: FamilyData, opt: LayoutOptions = DEFAULT_LAY
 function pava(targets: number[], widths: number[], gap: number): number[] {
   const off: number[] = [];
   targets.forEach((_, i) => off.push(i === 0 ? 0 : off[i - 1] + widths[i - 1] + gap));
-  const blocks: { sum: number; n: number }[] = [];
+  const blocks: { sum: number; w: number; n: number }[] = [];
   targets.forEach((t, i) => {
-    blocks.push({ sum: t - off[i], n: 1 });
+    blocks.push({ sum: t - off[i], w: 1, n: 1 });
     while (blocks.length > 1) {
       const a = blocks[blocks.length - 2];
       const b = blocks[blocks.length - 1];
-      if (a.sum / a.n <= b.sum / b.n) break;
+      if (a.sum / a.w <= b.sum / b.w) break;
       blocks.pop();
       a.sum += b.sum;
+      a.w += b.w;
       a.n += b.n;
     }
   });
   const out: number[] = [];
-  for (const b of blocks) for (let k = 0; k < b.n; k++) out.push(b.sum / b.n + off[out.length]);
+  for (const b of blocks) for (let k = 0; k < b.n; k++) out.push(b.sum / b.w + off[out.length]);
   return out;
 }

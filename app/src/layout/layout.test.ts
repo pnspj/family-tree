@@ -40,7 +40,50 @@ function overlaps(data: FamilyData) {
   return n;
 }
 
+/** Horizontal offset between each only child and the center of its parents. */
+function onlyChildOffsets(data: FamilyData) {
+  const L = computeLayout(data);
+  const cx = new Map(L.cards.map((c) => [c.id, c.x + DEFAULT_LAYOUT.cardW / 2]));
+  const out: { id: string; d: number }[] = [];
+  for (const u of data.unions) {
+    const kids = data.persons.filter((p) => p.childOf === u.id);
+    const ps = u.partners.filter((x): x is string => !!x);
+    if (kids.length !== 1 || !ps.length) continue;
+    const ux = ps.reduce((a, x) => a + cx.get(x)!, 0) / ps.length;
+    out.push({ id: kids[0].id, d: cx.get(kids[0].id)! - ux });
+  }
+  return out;
+}
+
 describe('layout', () => {
+  it('draws an only child straight under the parents when there is room', () => {
+    const offsets = new Map(onlyChildOffsets(sampleFile()).map((o) => [o.id, o.d]));
+    expect(Math.abs(offsets.get('minato')!)).toBeLessThan(0.01); // 湊
+    expect(Math.abs(offsets.get('hina')!)).toBeLessThan(0.01); // 陽菜
+  });
+
+  it('keeps an only child off-center only when a neighbour blocks the way', () => {
+    const { cardW, spouseGap, unitGap } = DEFAULT_LAYOUT;
+    for (const [n, seed] of [[30, 1], [60, 2], [120, 3], [200, 4], [300, 5]]) {
+      const data = randomFamily(n, seed);
+      const L = computeLayout(data);
+      const rowOf = new Map(L.cards.map((c) => [c.id, c.y]));
+      const xOf = new Map(L.cards.map((c) => [c.id, c.x]));
+      for (const { id, d } of onlyChildOffsets(data)) {
+        if (Math.abs(d) < 0.01) continue;
+        // Walk toward the parents over spouse-spaced cards (same unit) to the unit's edge,
+        // then the next card must sit at exactly the minimum unit gap.
+        const dir = d > 0 ? -1 : 1;
+        const xs = L.cards.filter((c) => c.y === rowOf.get(id)).map((c) => c.x).sort((p, q) => p - q);
+        let i = xs.indexOf(xOf.get(id)!);
+        while (xs[i + dir] !== undefined && Math.abs(Math.abs(xs[i + dir] - xs[i]) - (cardW + spouseGap)) < 0.01) i += dir;
+        const next = xs[i + dir];
+        expect(next, `${id} (seed ${seed}) is ${d.toFixed(1)}px off with free space`).toBeDefined();
+        expect(Math.abs(next - xs[i]), `${id} (seed ${seed})`).toBeCloseTo(cardW + unitGap, 1);
+      }
+    }
+  });
+
   it('puts a spouse’s parents on the spouse’s side (no crossing)', () => {
     expect(crossings(inlawRightCase)).toBe(0);
   });
