@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { createKinship } from '../core/kinship';
-import { parentCount, unionCount, wouldSplit, MAX_UNIONS_PER_PERSON, type PersonFields } from '../core/ops';
+import { openParentUnion, parentCount, unionCount, wouldSplit, MAX_UNIONS_PER_PERSON, type PersonFields } from '../core/ops';
 import type { FamilyFile, Gender, PartialDate, Person, Union } from '../core/types';
 import { kinshipText } from './display';
 import { rubyBase } from '../core/kinshipMaster';
@@ -11,14 +11,22 @@ export type Relation = 'first' | 'parent' | 'spouse' | 'child' | 'sibling';
 
 export type DialogState =
   | { kind: 'edit'; id: string }
-  | { kind: 'add'; relation: Relation; baseId?: string; unionId?: string; preset?: PersonFields };
+  | {
+      kind: 'add';
+      relation: Relation;
+      baseId?: string;
+      unionId?: string;
+      preset?: PersonFields;
+      /** Adding a spouse: the union where the base person is the only known parent (offered as "also the child's parent"). */
+      fillUnionId?: string;
+    };
 
 interface Props {
   file: FamilyFile;
   state: DialogState;
   script: Script;
   onClose: () => void;
-  onSave: (fields: PersonFields) => void;
+  onSave: (fields: PersonFields, opts?: { fillUnionId?: string }) => void;
   onAdd: (next: DialogState) => void;
   onSetEgo: (id: string) => void;
   onDelete: (id: string) => void;
@@ -43,6 +51,9 @@ export function PersonDialog(props: Props) {
   const person = state.kind === 'edit' ? persons.get(state.id) : undefined;
   const base = state.kind === 'add' && state.baseId ? persons.get(state.baseId) : undefined;
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const fillUnionId = state.kind === 'add' ? state.fillUnionId : undefined;
+  const [asParent, setAsParent] = useState(true);
+  const slotChildren = fillUnionId ? file.persons.filter((p) => p.childOf === fillUnionId).map(nameOf).join('・') : '';
 
   const title =
     state.kind === 'edit'
@@ -59,11 +70,20 @@ export function PersonDialog(props: Props) {
     <Modal title={title} subtitle={kinLabel && egoId !== person?.id ? `${nameOf(persons.get(egoId!))} から見て：${kinLabel}` : undefined} onClose={props.onClose}>
       {/* Opening an existing person is mostly done to add relatives, so that comes first and gets focus. */}
       {person && <AddRelatives file={file} person={person} persons={persons} onAdd={props.onAdd} />}
+      {fillUnionId && (
+        <label class="as-parent">
+          <input type="checkbox" checked={asParent} onChange={() => setAsParent(!asParent)} />
+          <span>
+            {slotChildren} の親として追加する
+            <small>（{nameOf(base)} と夫婦で {slotChildren} の親になります。再婚相手などで親ではない場合は外してください）</small>
+          </span>
+        </label>
+      )}
       <PersonForm
         key={state.kind === 'edit' ? state.id : `${state.relation}-${state.baseId}`}
         initial={person ? stripPerson(person) : state.kind === 'add' ? (state.preset ?? {}) : {}}
         submitLabel={state.kind === 'edit' ? '保存する' : '追加する'}
-        onSubmit={props.onSave}
+        onSubmit={(fields) => props.onSave(fields, { fillUnionId: fillUnionId && asParent ? fillUnionId : undefined })}
       />
       {person && (
         <>
@@ -119,10 +139,14 @@ function AddRelatives(props: { file: FamilyFile; person: Person; persons: Map<st
   const unions = file.unions.filter((u) => u.partners.includes(person.id));
   const marriages = unions.filter((u) => u.partners.filter(Boolean).length === 2);
   const singleUnion = unions.find((u) => u.partners.filter(Boolean).length === 1);
-  const canAddSpouse = unionCount(file, person.id) < MAX_UNIONS_PER_PERSON;
+  // A spouse can also fill the empty parent slot next to this person (the other parent of their child).
+  const slot = openParentUnion(file, person.id);
+  const canAddSpouse = unionCount(file, person.id) < MAX_UNIONS_PER_PERSON || !!slot;
   const partnerOf = (u: Union) => persons.get(u.partners.find((p) => p && p !== person.id)!);
-  const add = (relation: Relation, preset: PersonFields = {}, unionId?: string) =>
-    onAdd({ kind: 'add', relation, baseId: person.id, unionId, preset });
+  const add = (relation: Relation, preset: PersonFields = {}, unionId?: string, fillUnionId?: string) =>
+    onAdd({ kind: 'add', relation, baseId: person.id, unionId, preset, fillUnionId });
+  // As the other parent of a child, the spouse is usually the opposite of a father / mother.
+  const spousePreset: PersonFields = slot && person.gender === 'M' ? { gender: 'F' } : slot && person.gender === 'F' ? { gender: 'M' } : {};
   // Child targets: each marriage, plus "partner unknown" when that is possible.
   const childTargets: { label: string; unionId?: string }[] = [
     ...marriages.map((u) => ({ label: `${nameOf(partnerOf(u))} との子`, unionId: u.id })),
@@ -139,7 +163,7 @@ function AddRelatives(props: { file: FamilyFile; person: Person; persons: Map<st
         <button type="button" disabled={parents >= 2} onClick={() => add('parent', { gender: 'F' })}>
           ＋ 母
         </button>
-        <button type="button" disabled={!canAddSpouse} onClick={() => add('spouse')}>
+        <button type="button" disabled={!canAddSpouse} onClick={() => add('spouse', spousePreset, undefined, slot?.id)}>
           ＋ 配偶者
         </button>
         {childTargets.map((t) => (
@@ -291,6 +315,8 @@ function PersonForm(props: { initial: PersonFields; submitLabel: string; onSubmi
       <span>{label}</span>
       <input
         type="text"
+        // Start typing at 姓 (in the edit dialog the add-relative buttons come first and win).
+        data-autofocus={k === 'familyName' ? true : undefined}
         value={(f[k] as string) ?? ''}
         placeholder={placeholder}
         onInput={(e) => set(k, (e.target as HTMLInputElement).value as never)}

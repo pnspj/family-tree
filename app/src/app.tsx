@@ -231,7 +231,7 @@ export function App() {
     if (id === egoId) return;
     if (apply(ops.setEgo(file, id))) setRevealedKinship(new Set()); // new viewpoint: kinship is hidden again
   };
-  const onSave = (fields: ops.PersonFields) => {
+  const onSave = (fields: ops.PersonFields, opts?: { fillUnionId?: string }) => {
     if (!dialog) return;
     if (dialog.kind === 'edit') {
       if (apply(ops.updatePerson(file, dialog.id, fields))) {
@@ -245,7 +245,7 @@ export function App() {
       dialog.relation === 'parent'
         ? ops.addParent(file, base, fields)
         : dialog.relation === 'spouse'
-          ? ops.addSpouse(file, base, fields)
+          ? ops.addSpouse(file, base, fields, 'current', opts?.fillUnionId)
           : dialog.relation === 'child'
             ? ops.addChild(file, base, fields, dialog.unionId)
             : ops.addSibling(file, base, fields);

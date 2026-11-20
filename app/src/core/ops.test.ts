@@ -176,3 +176,35 @@ describe('re-linking existing people', () => {
     expect(validate(c.file)).toEqual([]);
   });
 });
+
+describe('adding the other parent through a spouse', () => {
+  it('fills the open parent slot so the spouse becomes the child’s parent', async () => {
+    const { openParentUnion } = await import('./ops');
+    const { file: f0, personId: me } = start();
+    const dad = ok(addParent(f0, me!, { givenName: '父', gender: 'M' }));
+    const slot = openParentUnion(dad.file, dad.personId!)!;
+    expect(slot).toBeDefined();
+    const mom = ok(addSpouse(dad.file, dad.personId!, { givenName: '母', gender: 'F' }, 'current', slot.id));
+    expect(mom.file.unions).toHaveLength(1);
+    expect(mom.file.unions[0].partners).toEqual([dad.personId, mom.personId]);
+    expect(person(mom.file, me!).childOf).toBe(slot.id);
+    expect(openParentUnion(mom.file, dad.personId!)).toBeUndefined();
+  });
+
+  it('still creates a separate marriage without the slot (e.g. a step-parent)', () => {
+    const { file: f0, personId: me } = start();
+    const dad = ok(addParent(f0, me!, { givenName: '父', gender: 'M' }));
+    const step = ok(addSpouse(dad.file, dad.personId!, { givenName: '継母', gender: 'F' }));
+    expect(step.file.unions).toHaveLength(2);
+  });
+
+  it('fills the slot even when the person already has two unions', async () => {
+    const { openParentUnion } = await import('./ops');
+    const { file: f0, personId: me } = start();
+    const kid = ok(addChild(f0, me!, { givenName: '子' })); // [me, null] + child
+    const second = ok(addSpouse(kid.file, me!, { givenName: '妻' }));
+    const slot = openParentUnion(second.file, me!)!;
+    expect(addSpouse(second.file, me!, { givenName: 'X' }).ok).toBe(false); // two unions already
+    expect(ok(addSpouse(second.file, me!, { givenName: '子の母' }, 'current', slot.id)).file.unions).toHaveLength(2);
+  });
+});

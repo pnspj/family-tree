@@ -98,8 +98,33 @@ export function addParent(file: FamilyFile, childId: string, fields: PersonField
   };
 }
 
-export function addSpouse(file: FamilyFile, personId: string, fields: PersonFields, status: Union['status'] = 'current'): OpResult {
+/** A union where the person is the only known parent of at least one child (the other parent is unknown). */
+export function openParentUnion(file: FamilyFile, personId: string): Union | undefined {
+  return file.unions.find(
+    (u) => u.partners.includes(personId) && u.partners.includes(null) && file.persons.some((p) => p.childOf === u.id),
+  );
+}
+
+/**
+ * Adds a spouse. With `fillUnionId` (a union where the person is the only known parent),
+ * the spouse fills the empty slot and so becomes the other parent of those children,
+ * instead of starting a separate marriage.
+ */
+export function addSpouse(
+  file: FamilyFile,
+  personId: string,
+  fields: PersonFields,
+  status: Union['status'] = 'current',
+  fillUnionId?: string,
+): OpResult {
   if (!file.persons.some((p) => p.id === personId)) return fail('人物が見つかりません');
+  if (fillUnionId) {
+    const u = file.unions.find((x) => x.id === fillUnionId);
+    if (!u || !u.partners.includes(personId) || !u.partners.includes(null)) return fail('指定された婚姻関係が見つかりません');
+    const [f, id] = addPerson(file, fields);
+    const partners: Union['partners'] = u.partners[0] === personId ? [personId, id] : [id, personId];
+    return { ok: true, file: { ...f, unions: f.unions.map((x) => (x.id === u.id ? { ...x, partners, status } : x)) }, personId: id };
+  }
   if (unionCount(file, personId) >= MAX_UNIONS_PER_PERSON) return fail('婚姻関係は1人につき2つまでです');
   const [f, id] = addPerson(file, fields);
   const union: Union = { id: newId(), partners: [personId, id], status };

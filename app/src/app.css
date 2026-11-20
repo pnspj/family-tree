@@ -379,3 +379,7 @@ ruby rt { font-size: 0.55em; font-weight: 500; color: var(--muted); letter-spaci
 /* Cards sit in a fixed-size foreignObject, so draw the ring inside the card. */
 .card:focus-visible { outline: 3px solid #1f1a17; outline-offset: -7px; }
 .relatives.top { margin: 0 0 1rem; padding: 0 0 1rem; border-top: none; border-bottom: 1px solid var(--border); }
+.as-parent { display: flex; gap: 0.6rem; align-items: flex-start; margin-bottom: 1rem; padding: 0.7rem 0.8rem; border-radius: 10px; background: var(--accent-soft); cursor: pointer; }
+.as-parent input { width: 1.2em; height: 1.2em; margin-top: 0.15em; accent-color: var(--accent); flex: none; }
+.as-parent span { display: flex; flex-direction: column; gap: 0.2rem; font-weight: 700; }
+.as-parent small { font-weight: 400; color: var(--muted); font-size: 0.8rem; }
