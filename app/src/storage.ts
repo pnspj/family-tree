@@ -38,8 +38,12 @@ export async function loadFile(): Promise<FamilyFile | undefined> {
 export const saveFile = (file: FamilyFile) => tx('readwrite', (s) => s.put(file, KEY));
 export const clearFile = () => tx('readwrite', (s) => s.delete(KEY));
 
+export type Script = 'kanji' | 'furigana' | 'kana';
+
 export interface ViewPrefs {
-  kana: boolean;
+  script: Script;
+  maskName: boolean;
+  maskKinship: boolean;
   showKinship: boolean;
   showLife: boolean;
   genderColor: boolean;
@@ -49,7 +53,9 @@ export interface ViewPrefs {
 }
 
 export const DEFAULT_PREFS: ViewPrefs = {
-  kana: false,
+  script: 'kanji',
+  maskName: false,
+  maskKinship: false,
   showKinship: true,
   showLife: true,
   genderColor: true,
@@ -62,7 +68,11 @@ const PREFS_KEY = 'family-tree:prefs';
 
 export function loadPrefs(): ViewPrefs {
   try {
-    return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') };
+    const saved = JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}');
+    // v1 stored a boolean `kana` instead of `script`
+    if (typeof saved.kana === 'boolean' && !saved.script) saved.script = saved.kana ? 'kana' : 'kanji';
+    delete saved.kana;
+    return { ...DEFAULT_PREFS, ...saved };
   } catch {
     return DEFAULT_PREFS;
   }

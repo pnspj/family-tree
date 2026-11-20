@@ -1,6 +1,6 @@
 // Kinship resolution: who is `target` as seen from `ego`?
 import { compareDates } from './date';
-import { type KinAge, type KinGender, type KinRow, hasKey, lookup, usesAge } from './kinshipMaster';
+import { type KinAge, type KinGender, type KinRow, YOMI, hasKey, lookup, usesAge } from './kinshipMaster';
 import type { FamilyData, LabelOverride, Union } from './types';
 
 export interface Kinship {
@@ -8,6 +8,8 @@ export interface Kinship {
   kind: 'master' | 'path';
   kanji: string;
   kana: string;
+  /** Kanji label with readings for furigana, markup {漢字|よみ}. */
+  ruby: string;
   /** Master key for kind 'master' (e.g. "B(2,1)"). */
   key?: string;
   /** Label ids of each part (one for 'master'). */
@@ -102,7 +104,15 @@ export function createKinship(data: FamilyData, overrides: Record<string, LabelO
     const g = firstUp ? persons.get(firstUp)?.gender : undefined;
     return g === 'M' ? 'paternal' : g === 'F' ? 'maternal' : undefined;
   };
-  const apply = (row: KinRow) => ({ kanji: overrides[row.id]?.kanji ?? row.kanji, kana: overrides[row.id]?.kana ?? row.kana });
+  const apply = (row: KinRow) => {
+    const kanji = overrides[row.id]?.kanji;
+    return {
+      kanji: kanji ?? row.kanji,
+      kana: overrides[row.id]?.kana ?? row.kana,
+      // A custom kanji wording has no known reading: show it without furigana.
+      ruby: kanji ? kanji.replace(/[{}|]/g, '') : (YOMI[row.id] ?? row.kanji),
+    };
+  };
   const master = (key: string, gender: KinGender, age: KinAge, side?: Kinship['side']): Kinship | undefined => {
     const row = lookup(key, gender, usesAge(key) ? age : 'any');
     return row ? { kind: 'master', key, labelIds: [row.id], side, ...apply(row) } : undefined;
@@ -206,6 +216,7 @@ export function createKinship(data: FamilyData, overrides: Record<string, LabelO
     return {
       kind: 'path',
       kanji: parts.map((p) => p.kanji).join('の'),
+      ruby: parts.map((p) => p.ruby).join('の'),
       kana: parts.map((p) => p.kana).join('の '),
       labelIds: parts.flatMap((p) => p.labelIds),
     };

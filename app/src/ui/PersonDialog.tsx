@@ -3,6 +3,8 @@ import { createKinship } from '../core/kinship';
 import { parentCount, unionCount, wouldSplit, MAX_UNIONS_PER_PERSON, type PersonFields } from '../core/ops';
 import type { FamilyFile, Gender, PartialDate, Person, Union } from '../core/types';
 import { kinshipText } from './display';
+import { rubyBase } from '../core/kinshipMaster';
+import type { Script } from '../storage';
 import { Modal } from './Modal';
 
 export type Relation = 'first' | 'parent' | 'spouse' | 'child' | 'sibling';
@@ -14,13 +16,15 @@ export type DialogState =
 interface Props {
   file: FamilyFile;
   state: DialogState;
-  kana: boolean;
+  script: Script;
   onClose: () => void;
   onSave: (fields: PersonFields) => void;
   onAdd: (next: DialogState) => void;
   onSetEgo: (id: string) => void;
   onDelete: (id: string) => void;
   onUnionStatus: (unionId: string, status: Union['status']) => void;
+  onSetParents: (personId: string, unionId: string | undefined) => void;
+  onLinkSpouse: (a: string, b: string) => void;
 }
 
 const relationTitle: Record<Relation, string> = {
@@ -49,7 +53,7 @@ export function PersonDialog(props: Props) {
 
   const kin = useMemo(() => createKinship(file, file.settings.labelOverrides), [file]);
   const egoId = file.settings.egoId;
-  const kinLabel = person && egoId ? kinshipText(kin.resolve(egoId, person.id), { kana: props.kana, showSide: true }) : '';
+  const kinLabel = person && egoId ? rubyBase(kinshipText(kin.resolve(egoId, person.id), { script: props.script, showSide: true })) : '';
 
   return (
     <Modal title={title} subtitle={kinLabel && egoId !== person?.id ? `${nameOf(persons.get(egoId!))} から見て：${kinLabel}` : undefined} onClose={props.onClose}>
@@ -62,6 +66,13 @@ export function PersonDialog(props: Props) {
       {person && (
         <>
           <Relatives file={file} person={person} persons={persons} onAdd={props.onAdd} onUnionStatus={props.onUnionStatus} />
+          <Repair
+            file={file}
+            person={person}
+            persons={persons}
+            onSetParents={(u) => props.onSetParents(person.id, u)}
+            onLinkSpouse={(other) => props.onLinkSpouse(person.id, other)}
+          />
           <div class="dialog-actions">
             {egoId !== person.id && (
               <button type="button" onClick={() => props.onSetEgo(person.id)}>
@@ -166,6 +177,69 @@ function Relatives(props: {
         </>
       )}
     </section>
+  );
+}
+
+// ---- repair links ---------------------------------------------------------------
+
+/** Fix mistakes: move to other parents, or marry two people who are both registered. */
+function Repair(props: {
+  file: FamilyFile;
+  person: Person;
+  persons: Map<string, Person>;
+  onSetParents: (unionId: string | undefined) => void;
+  onLinkSpouse: (otherId: string) => void;
+}) {
+  const { file, person, persons } = props;
+  const [parentChoice, setParentChoice] = useState(person.childOf ?? '');
+  const [spouseChoice, setSpouseChoice] = useState('');
+  const unionLabel = (u: Union) => {
+    const names = u.partners.filter((p): p is string => !!p).map((p) => nameOf(persons.get(p)));
+    if (names.length === 2) return `${names[0]} と ${names[1]} の子`;
+    if (names.length === 1) return `${names[0]} の子（もう一人の親は未登録）`;
+    const kids = file.persons.filter((p) => p.childOf === u.id && p.id !== person.id).map(nameOf);
+    return `親は未登録（${kids.join('・')} のきょうだい）`;
+  };
+  const parentOptions = file.unions.filter((u) => !u.partners.includes(person.id));
+  const spouses = new Set(file.unions.filter((u) => u.partners.includes(person.id)).flatMap((u) => u.partners));
+  const spouseOptions = file.persons.filter((p) => p.id !== person.id && !spouses.has(p.id));
+
+  return (
+    <details class="repair">
+      <summary>つながりを直す</summary>
+      <label>
+        <span>親（どの夫婦の子か）</span>
+        <div class="inline">
+          <select value={parentChoice} onChange={(e) => setParentChoice((e.target as HTMLSelectElement).value)}>
+            <option value="">親なし（未登録）</option>
+            {parentOptions.map((u) => (
+              <option key={u.id} value={u.id}>
+                {unionLabel(u)}
+              </option>
+            ))}
+          </select>
+          <button type="button" disabled={parentChoice === (person.childOf ?? '')} onClick={() => props.onSetParents(parentChoice || undefined)}>
+            変更する
+          </button>
+        </div>
+      </label>
+      <label>
+        <span>登録済みの人と婚姻関係を結ぶ</span>
+        <div class="inline">
+          <select value={spouseChoice} onChange={(e) => setSpouseChoice((e.target as HTMLSelectElement).value)}>
+            <option value="">選んでください</option>
+            {spouseOptions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {nameOf(p)}
+              </option>
+            ))}
+          </select>
+          <button type="button" disabled={!spouseChoice} onClick={() => props.onLinkSpouse(spouseChoice)}>
+            結ぶ
+          </button>
+        </div>
+      </label>
+    </details>
   );
 }
 

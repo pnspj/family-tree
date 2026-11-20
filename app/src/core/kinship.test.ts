@@ -135,3 +135,18 @@ describe('dates', () => {
     expect(ageText({ id: 'x', birth: { y: 1920 }, deceased: true }, today)).toBeUndefined();
   });
 });
+
+describe('furigana readings', () => {
+  it('has a reading for every label id whose base text matches the kanji label', async () => {
+    const { YOMI, rubyBase } = await import('./kinshipMaster');
+    for (const r of KIN_MASTER) {
+      expect(YOMI[r.id], r.id).toBeDefined();
+      expect(rubyBase(YOMI[r.id]), r.id).toBe(r.kanji);
+    }
+  });
+  it('composes readings for path labels and drops them for custom kanji', () => {
+    expect(k.resolve('ren', 'takeshi')?.ruby).toBe('{大叔母|おおおば}の{息子|むすこ}');
+    const kk = createKinship(sample, { father: { kanji: 'お父ちゃん' } });
+    expect(kk.resolve('ren', 'kenichi')?.ruby).toBe('お父ちゃん');
+  });
+});

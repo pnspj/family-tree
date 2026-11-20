@@ -2,14 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import * as ops from './core/ops';
 import { sampleFile } from './core/sample';
 import type { FamilyFile } from './core/types';
-import { downloadJson, loadFile, loadPrefs, saveFile, savePrefs, type ViewPrefs } from './storage';
+import { downloadJson, loadFile, loadPrefs, saveFile, savePrefs, type Script, type ViewPrefs } from './storage';
 import { LabelSettings } from './ui/LabelSettings';
 import { Modal } from './ui/Modal';
 import { PersonDialog, type DialogState } from './ui/PersonDialog';
-import { TreeView } from './ui/TreeView';
-import { personName } from './ui/display';
+import { TreeView, isKinshipHidden, isNameHidden, type MaskState } from './ui/TreeView';
+import { Ruby } from './ui/Ruby';
+import { isKana, personName } from './ui/display';
 
 type Mode = 'view' | 'edit';
+type BoolPref = { [K in keyof ViewPrefs]: ViewPrefs[K] extends boolean ? K : never }[keyof ViewPrefs];
 type Confirm = { message: string; action: () => void } | null;
 
 export function App() {
@@ -23,6 +25,8 @@ export function App() {
   const [importErrors, setImportErrors] = useState<string[] | null>(null);
   const [toast, setToast] = useState('');
   const [fitRequest, setFitRequest] = useState({ whole: false });
+  const [revealedNames, setRevealedNames] = useState<Set<string>>(new Set());
+  const [revealedKinship, setRevealedKinship] = useState<Set<string>>(new Set());
   const fileInput = useRef<HTMLInputElement>(null);
 
   // Load once, then autosave every change (debounced).
@@ -45,6 +49,8 @@ export function App() {
     setFile(f);
     setDialog(null);
     setFitRequest({ whole: false });
+    setRevealedNames(new Set());
+    setRevealedKinship(new Set());
   };
   const apply = (r: ops.OpResult): r is Extract<ops.OpResult, { ok: true }> => {
     if (!r.ok) {
@@ -136,7 +142,7 @@ export function App() {
           <PersonDialog
             file={startFile}
             state={dialog}
-            kana={prefs.kana}
+            script={prefs.script}
             onClose={closeDialog}
             onSave={(fields) => {
               const r = ops.createFirstPerson(startFile, fields);
@@ -149,6 +155,8 @@ export function App() {
             onSetEgo={() => {}}
             onDelete={() => {}}
             onUnionStatus={() => {}}
+            onSetParents={() => {}}
+            onLinkSpouse={() => {}}
           />
         )}
         {hiddenInput}
@@ -159,10 +167,30 @@ export function App() {
 
   // ---- main screen ----------------------------------------------------------
   const ego = file.persons.find((p) => p.id === file.settings.egoId);
-  const toggle = (k: keyof ViewPrefs) => setPrefs((p) => ({ ...p, [k]: !p[k] }));
+  const toggle = (k: BoolPref) => setPrefs((p) => ({ ...p, [k]: !p[k] }));
+  const kana = isKana(prefs);
+  const quiz = mode === 'view' && (prefs.maskName || prefs.maskKinship);
+  const masks: MaskState | null = quiz
+    ? { name: prefs.maskName, kinship: prefs.maskKinship && prefs.showKinship, revealedNames, revealedKinship }
+    : null;
+  const hiddenCount = file.persons.filter(
+    (p) => isNameHidden(masks, p.id, file.settings.egoId) || isKinshipHidden(masks, p.id, file.settings.egoId),
+  ).length;
+  const remask = () => {
+    setRevealedNames(new Set());
+    setRevealedKinship(new Set());
+  };
   const onCardClick = (id: string) => {
-    if (mode === 'edit') setDialog({ kind: 'edit', id });
-    else apply(ops.setEgo(file, id));
+    if (mode === 'edit') return setDialog({ kind: 'edit', id });
+    const egoId = file.settings.egoId;
+    // Quiz: the first tap reveals the hidden parts, the next one switches the viewpoint.
+    if (isNameHidden(masks, id, egoId) || isKinshipHidden(masks, id, egoId)) {
+      setRevealedNames((s) => new Set(s).add(id));
+      setRevealedKinship((s) => new Set(s).add(id));
+      return;
+    }
+    if (id === egoId) return;
+    if (apply(ops.setEgo(file, id))) setRevealedKinship(new Set()); // new viewpoint: kinship is hidden again
   };
   const onSave = (fields: ops.PersonFields) => {
     if (!dialog) return;
@@ -193,12 +221,43 @@ export function App() {
             へんしゅう
           </button>
         </div>
-        <label class="switch">
-          <input type="checkbox" checked={prefs.kana} onChange={() => toggle('kana')} />
-          ひらがな
-        </label>
+        <div class="seg" role="group" aria-label="文字">
+          {(
+            [
+              ['kanji', 'かんじ'],
+              ['furigana', 'ふりがな'],
+              ['kana', 'ひらがな'],
+            ] as [Script, string][]
+          ).map(([s, label]) => (
+            <button type="button" key={s} class={prefs.script === s ? 'on' : ''} onClick={() => setPrefs((p) => ({ ...p, script: s }))}>
+              {label}
+            </button>
+          ))}
+        </div>
+        {mode === 'view' && (
+          <div class="quiz" role="group" aria-label="クイズ">
+            <span class="quiz-title">{kana ? 'かくす' : '隠す'}：</span>
+            <label class="switch">
+              <input type="checkbox" checked={prefs.maskName} onChange={() => toggle('maskName')} />
+              {kana ? 'なまえ' : '名前'}
+            </label>
+            <label class="switch">
+              <input type="checkbox" checked={prefs.maskKinship} onChange={() => toggle('maskKinship')} />
+              {kana ? 'よびかた' : '続柄'}
+            </label>
+            {quiz && (
+              <>
+                <span class="quiz-count">{hiddenCount ? `あと ${hiddenCount} にん` : 'ぜんぶ わかった！'}</span>
+                <button type="button" class="small" onClick={remask}>
+                  もういちど かくす
+                </button>
+              </>
+            )}
+          </div>
+        )}
         <span class="ego">
-          {prefs.kana ? 'きじゅん' : '基準'}：<strong>{ego ? personName(ego, prefs) || '（なまえなし）' : '—'}</strong>
+          {kana ? 'きじゅん' : '基準'}：
+          <strong>{ego ? <Ruby text={personName(ego, prefs) || '（なまえなし）'} /> : '—'}</strong>
         </span>
         <span class="spacer" />
         <button type="button" onClick={() => setFitRequest({ whole: true })}>
@@ -219,7 +278,7 @@ export function App() {
                   ['showLife', '生年・年齢'],
                   ['genderColor', '性別の色'],
                   ['preferNickname', '呼び名で表示'],
-                ] as [keyof ViewPrefs, string][]
+                ] as [BoolPref, string][]
               ).map(([k, label]) => (
                 <label key={k} class="menu-check" onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" checked={prefs[k]} onChange={() => toggle(k)} />
@@ -248,20 +307,22 @@ export function App() {
         </div>
       </header>
       <p class="mode-hint">
-        {mode === 'view'
-          ? prefs.kana
-            ? 'カードを おすと、その ひとから みた よびかたに かわるよ'
-            : 'カードを押すと、その人から見た続柄に切り替わります'
-          : 'カードを押すと、その人の編集・家族の追加ができます'}
+        {mode === 'edit'
+          ? 'カードを押すと、その人の編集・家族の追加ができます'
+          : quiz
+            ? 'だれかな？ カードを おして こたえを みてみよう。もう いちど おすと、その ひとから みた よびかたに かわるよ'
+            : kana
+              ? 'カードを おすと、その ひとから みた よびかたに かわるよ'
+              : 'カードを押すと、その人から見た続柄に切り替わります'}
       </p>
       <main class="stage">
-        <TreeView file={file} prefs={prefs} onCardClick={onCardClick} fitRequest={fitRequest} />
+        <TreeView file={file} prefs={prefs} masks={masks} onCardClick={onCardClick} fitRequest={fitRequest} />
       </main>
       {dialog && (
         <PersonDialog
           file={file}
           state={dialog}
-          kana={prefs.kana}
+          script={prefs.script}
           onClose={closeDialog}
           onSave={onSave}
           onAdd={setDialog}
@@ -272,6 +333,12 @@ export function App() {
             if (apply(ops.deletePerson(file, id))) setDialog(null);
           }}
           onUnionStatus={(uid, status) => apply(ops.setUnionStatus(file, uid, status))}
+          onSetParents={(pid, uid) => {
+            if (apply(ops.setParents(file, pid, uid))) setToast('親を変更しました');
+          }}
+          onLinkSpouse={(a, b) => {
+            if (apply(ops.linkSpouses(file, a, b))) setToast('婚姻関係を結びました');
+          }}
         />
       )}
       {showLabels && (

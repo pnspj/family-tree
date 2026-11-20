@@ -309,3 +309,38 @@ export function parseFamilyFile(text: string): { ok: true; file: FamilyFile } | 
   if (file.settings.egoId && !file.persons.some((p) => p.id === file.settings.egoId)) file.settings.egoId = file.persons[0]?.id;
   return { ok: true, file };
 }
+
+/** Re-parents a person to an existing union (`unionId`) or detaches them (undefined). */
+export function setParents(file: FamilyFile, personId: string, unionId: string | undefined): OpResult {
+  if (!file.persons.some((p) => p.id === personId)) return fail('人物が見つかりません');
+  if (unionId) {
+    const u = file.unions.find((x) => x.id === unionId);
+    if (!u) return fail('婚姻関係が見つかりません');
+    if (u.partners.includes(personId)) return fail('自分を自分の親にはできません');
+  }
+  const f = cleanup({
+    ...file,
+    persons: file.persons.map((p) => {
+      if (p.id !== personId) return p;
+      return unionId ? { ...p, childOf: unionId } : withoutKey(p, 'childOf');
+    }),
+  });
+  if (validate(f).some((e) => e.includes('循環'))) return fail('その親にすると、自分が自分の祖先になってしまいます');
+  return { ok: true, file: f };
+}
+
+/** Creates a union between two people who are both already registered. */
+export function linkSpouses(file: FamilyFile, a: string, b: string, status: Union['status'] = 'current'): OpResult {
+  if (a === b) return fail('同じ人どうしは結べません');
+  if (!file.persons.some((p) => p.id === a) || !file.persons.some((p) => p.id === b)) return fail('人物が見つかりません');
+  if (file.unions.some((u) => u.partners.includes(a) && u.partners.includes(b))) return fail('すでに婚姻関係があります');
+  // A single-parent union of `a` gets the new partner instead of creating another union.
+  const single = file.unions.find((u) => u.partners.includes(a) && u.partners.includes(null));
+  if (unionCount(file, b) >= MAX_UNIONS_PER_PERSON) return fail('相手の婚姻関係がすでに2つあります');
+  if (single) {
+    const partners: Union['partners'] = single.partners[0] === a ? [a, b] : [b, a];
+    return { ok: true, file: { ...file, unions: file.unions.map((u) => (u.id === single.id ? { ...u, partners, status } : u)) } };
+  }
+  if (unionCount(file, a) >= MAX_UNIONS_PER_PERSON) return fail('婚姻関係は1人につき2つまでです');
+  return { ok: true, file: { ...file, unions: [...file.unions, { id: newId(), partners: [a, b], status }] } };
+}

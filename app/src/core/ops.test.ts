@@ -150,3 +150,29 @@ describe('validation and import', () => {
     expect(r2.file.settings.labelOverrides.father).toBeUndefined();
   });
 });
+
+describe('re-linking existing people', () => {
+  it('moves a person to another parent union and rejects cycles', async () => {
+    const { setParents } = await import('./ops');
+    const f = sampleFile();
+    const r = ok(setParents(f, 'kenta', 'u_tadashi')); // 健太 becomes 進's sibling
+    expect(person(r.file, 'kenta').childOf).toBe('u_tadashi');
+    expect(r.file.unions.some((u) => u.id === 'u_susumu')).toBe(false); // now empty -> cleaned up
+    expect(setParents(f, 'ichiro', 'u_kenichi2').ok).toBe(false); // cycle
+    expect(setParents(f, 'kenichi', 'u_kenichi2').ok).toBe(false); // own union
+    const d = ok(setParents(f, 'takeshi', undefined));
+    expect(person(d.file, 'takeshi').childOf).toBeUndefined();
+    expect(d.file.unions.some((u) => u.id === 'u_osamu')).toBe(true); // a married couple stays
+  });
+
+  it('links two registered people, reusing a single-parent union', async () => {
+    const { linkSpouses } = await import('./ops');
+    const f = sampleFile();
+    const r = ok(linkSpouses(f, 'susumu', 'naomi'));
+    expect(r.file.unions.find((u) => u.id === 'u_susumu')!.partners).toEqual(['susumu', 'naomi']); // 健太 gains a mother
+    expect(linkSpouses(f, 'kenichi', 'sakura').ok).toBe(false); // kenichi already has two
+    expect(linkSpouses(f, 'kenichi', 'misaki').ok).toBe(false); // already married
+    const c = ok(linkSpouses(f, 'sho', 'hina')); // cousins-of-cousins marriage
+    expect(validate(c.file)).toEqual([]);
+  });
+});
