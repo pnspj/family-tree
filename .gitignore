@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+# Exported family data must never be committed (personal information).
+family-tree-*.json
