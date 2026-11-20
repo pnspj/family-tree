@@ -6,7 +6,8 @@ import { isDeceased } from '../core/date';
 import type { FamilyFile } from '../core/types';
 import { computeLayout, DEFAULT_LAYOUT } from '../layout/layout';
 import type { ViewPrefs } from '../storage';
-import { isKana, kinshipText, lifeText, personName, visibleLength } from './display';
+import { fitName, isKana, kinshipText, lifeText, personNameParts, visibleLength } from './display';
+import { rubyBase } from '../core/kinshipMaster';
 import { Ruby } from './Ruby';
 
 /** What is currently hidden on each card (quiz mode). */
@@ -38,8 +39,17 @@ export function TreeView({ file, prefs, masks, onCardClick, fitRequest }: Props)
   const gRef = useRef<SVGGElement>(null);
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
 
-  // Furigana needs taller cards for the reading lines.
-  const opt = useMemo(() => ({ ...DEFAULT_LAYOUT, cardH: prefs.script === 'furigana' ? 100 : DEFAULT_LAYOUT.cardH }), [prefs.script]);
+  const nameFits = useMemo(
+    () => new Map(file.persons.map((p) => [p.id, fitName(personNameParts(p, prefs))])),
+    [file.persons, prefs.script, prefs.preferNickname],
+  );
+  const twoLineNames = [...nameFits.values()].some((f) => f.lines.length > 1);
+  // Furigana needs taller cards for the reading lines; two-line names need one more line.
+  const opt = useMemo(() => {
+    const furigana = prefs.script === 'furigana';
+    const base = furigana ? 100 : DEFAULT_LAYOUT.cardH;
+    return { ...DEFAULT_LAYOUT, cardH: base + (twoLineNames ? (furigana ? 26 : 18) : 0) };
+  }, [prefs.script, twoLineNames]);
   const layout = useMemo(() => computeLayout(file, opt), [file.persons, file.unions, opt]);
   const kin = useMemo(() => createKinship(file, file.settings.labelOverrides), [file.persons, file.unions, file.settings.labelOverrides]);
   const persons = useMemo(() => new Map(file.persons.map((p) => [p.id, p])), [file.persons]);
@@ -89,8 +99,11 @@ export function TreeView({ file, prefs, masks, onCardClick, fitRequest }: Props)
           const kinText = kinshipText(k, prefs);
           const hideName = isNameHidden(masks, c.id, ego);
           const hideKin = prefs.showKinship && isKinshipHidden(masks, c.id, ego) && !!kinText;
+          const fit = nameFits.get(c.id)!;
+          const fullName = rubyBase(fit.lines.join(' '));
           const cls = [
             'card',
+            fit.lines.length > 1 ? 'two-line-name' : '',
             prefs.genderColor ? `g-${p.gender ?? 'none'}` : 'g-none',
             isDeceased(p) ? 'deceased' : '',
             c.id === ego ? 'is-ego' : '',
@@ -100,7 +113,7 @@ export function TreeView({ file, prefs, masks, onCardClick, fitRequest }: Props)
           const label = hideName || hideKin ? 'かくれている カード。おすと みられます' : undefined;
           return (
             <foreignObject key={c.id} x={c.x} y={c.y} width={opt.cardW} height={opt.cardH}>
-              <button type="button" class={cls} aria-label={label} onClick={() => onCardClick(c.id)}>
+              <button type="button" class={cls} aria-label={label} title={hideName ? undefined : fullName} onClick={() => onCardClick(c.id)}>
                 {hideKin ? (
                   <span class="kin masked">？</span>
                 ) : (
@@ -111,8 +124,16 @@ export function TreeView({ file, prefs, masks, onCardClick, fitRequest }: Props)
                 {hideName ? (
                   <span class="name masked">？？？</span>
                 ) : (
-                  <span class="name">
-                    <Ruby text={personName(p, prefs) || '？'} />
+                  <span class={`name size-${fit.size}`}>
+                    {fit.lines.length ? (
+                      fit.lines.map((line, i) => (
+                        <span key={i} class="name-line">
+                          <Ruby text={line} />
+                        </span>
+                      ))
+                    ) : (
+                      '？'
+                    )}
                   </span>
                 )}
                 {prefs.showLife && !hideName && <span class="life">{lifeText(p, today, isKana(prefs))}</span>}

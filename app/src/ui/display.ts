@@ -10,18 +10,31 @@ const ruby = (base?: string, reading?: string) => (base ? (reading ? `{${esc(bas
 
 export const isKana = (p: { script: Script }) => p.script === 'kana';
 
-/** Name as ruby markup ({山田|やまだ} {蓮|れん}) in furigana mode, plain text otherwise. */
-export function personName(p: Person, prefs: Pick<ViewPrefs, 'script' | 'preferNickname'>): string {
-  if (prefs.preferNickname && p.nickname) return esc(p.nickname);
-  const kanji = join(p.familyName, p.givenName);
-  const kana = join(p.familyNameKana, p.givenNameKana);
-  if (prefs.script === 'kana') return esc(kana || kanji || p.nickname || '');
-  if (prefs.script === 'furigana' && kanji) {
+const parts = (...xs: (string | undefined)[]) => xs.map((x) => (x ? esc(x) : '')).filter(Boolean);
+/** Splits free text at the first space: "しずおかの ばあば" -> two parts. */
+const splitFirstSpace = (s: string) => {
+  const m = esc(s).trim().match(/^(\S+)\s+(.+)$/);
+  return m ? [m[1], m[2]] : [esc(s).trim()];
+};
+
+/**
+ * Name split into parts (family / given), each as ruby markup in furigana mode,
+ * so long names can be shown on two lines.
+ */
+export function personNameParts(p: Person, prefs: Pick<ViewPrefs, 'script' | 'preferNickname'>): string[] {
+  if (prefs.preferNickname && p.nickname) return splitFirstSpace(p.nickname);
+  const kanji = parts(p.familyName, p.givenName);
+  const kana = parts(p.familyNameKana, p.givenNameKana);
+  if (prefs.script === 'kana') return kana.length ? kana : kanji.length ? kanji : p.nickname ? splitFirstSpace(p.nickname) : [];
+  if (prefs.script === 'furigana' && kanji.length) {
     // Per-part readings; a part without its kana reading is shown bare.
-    return join(ruby(p.familyName, p.familyNameKana) || undefined, ruby(p.givenName, p.givenNameKana) || undefined);
+    return [ruby(p.familyName, p.familyNameKana), ruby(p.givenName, p.givenNameKana)].filter(Boolean);
   }
-  return esc(kanji || kana || p.nickname || '');
+  return kanji.length ? kanji : kana.length ? kana : p.nickname ? splitFirstSpace(p.nickname) : [];
 }
+
+/** Name as one line of (ruby) markup. */
+export const personName = (p: Person, prefs: Pick<ViewPrefs, 'script' | 'preferNickname'>) => personNameParts(p, prefs).join(' ');
 
 /** Plain name for dialogs and labels. */
 export const plainName = (p?: Person) =>
@@ -59,3 +72,45 @@ export function kinshipText(k: Kinship | undefined, prefs: Pick<ViewPrefs, 'scri
 
 /** Text length without readings (for choosing a smaller font). */
 export const visibleLength = (markup: string) => markup.replace(/\{([^|}]*)\|[^}]*\}/g, '$1').length;
+
+const plainUnits = (s: string) => {
+  let u = 0;
+  for (const ch of s) {
+    const c = ch.codePointAt(0)!;
+    u += c < 0x1100 || (c >= 0xff61 && c <= 0xff9f) ? 0.55 : 1;
+  }
+  return u;
+};
+
+/** Ruby text is drawn at about this fraction of the base font size. */
+const RT_SCALE = 0.55;
+
+/**
+ * Display width in full-width characters (half-width letters/digits/kana count ~0.55).
+ * A ruby segment is as wide as the wider of its base text and its reading.
+ */
+export function textUnits(markup: string): number {
+  let u = 0;
+  const rest = markup.replace(/\{([^|}]*)\|([^}]*)\}/g, (_m, base: string, reading: string) => {
+    u += Math.max(plainUnits(base), plainUnits(reading) * RT_SCALE);
+    return '';
+  });
+  return u + plainUnits(rest);
+}
+
+/** Full-width characters that fit on one name line of a card at normal size. */
+export const NAME_LINE_UNITS = 8;
+
+export interface NameFit {
+  lines: string[];
+  size: 'm' | 's' | 'xs';
+}
+
+/** One line when it fits, otherwise family/given on two lines; shrink the font for long lines. */
+export function fitName(nameParts: string[]): NameFit {
+  const oneLine = nameParts.join(' ');
+  const lines = textUnits(oneLine) <= NAME_LINE_UNITS || nameParts.length < 2 ? [oneLine] : nameParts;
+  const widest = Math.max(0, ...lines.map(textUnits));
+  const size = widest <= NAME_LINE_UNITS ? 'm' : widest <= 9.5 ? 's' : 'xs';
+  return { lines, size };
+}
