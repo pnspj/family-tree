@@ -36,6 +36,16 @@ export function personNameParts(p: Person, prefs: Pick<ViewPrefs, 'script' | 'pr
 /** Name as one line of (ruby) markup. */
 export const personName = (p: Person, prefs: Pick<ViewPrefs, 'script' | 'preferNickname'>) => personNameParts(p, prefs).join(' ');
 
+/** 旧姓 line: "旧姓 佐藤" / "もとは さとう" / furigana markup; '' when none. */
+export function birthNameText(p: Person, script: Script): string {
+  const kanji = p.birthFamilyName;
+  const kana = p.birthFamilyNameKana;
+  if (!kanji && !kana) return '';
+  if (script === 'kana') return `もとは ${esc(kana || kanji!)}`;
+  if (script === 'furigana') return `{旧姓|きゅうせい} ${kanji ? ruby(kanji, kana) : esc(kana!)}`;
+  return `旧姓 ${esc(kanji || kana!)}`;
+}
+
 /** Plain name for dialogs and labels. */
 export const plainName = (p?: Person) =>
   p ? join(p.familyName, p.givenName) || join(p.familyNameKana, p.givenNameKana) || p.nickname || '（なまえなし）' : '';

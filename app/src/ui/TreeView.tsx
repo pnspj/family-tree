@@ -1,16 +1,12 @@
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+// Interactive (pan / zoom / tap) tree view.
+import { useEffect, useRef } from 'preact/hooks';
 import { select } from 'd3-selection';
 import { zoom as d3zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom';
-import { createKinship } from '../core/kinship';
-import { isDeceased } from '../core/date';
 import type { FamilyFile } from '../core/types';
-import { computeLayout, DEFAULT_LAYOUT } from '../layout/layout';
 import type { ViewPrefs } from '../storage';
-import { fitName, isKana, kinshipText, lifeText, personNameParts, visibleLength } from './display';
-import { rubyBase } from '../core/kinshipMaster';
-import { Ruby } from './Ruby';
+import { TreeContent, useTreeModel, type CardHidden } from './TreeDrawing';
 
-/** What is currently hidden on each card (quiz mode). */
+/** What is currently hidden on each card (mask mode). */
 export interface MaskState {
   name: boolean;
   kinship: boolean;
@@ -21,7 +17,8 @@ export interface MaskState {
 interface Props {
   file: FamilyFile;
   prefs: ViewPrefs;
-  masks: MaskState | null;
+  hidden?: (id: string) => CardHidden;
+  cardClass?: (id: string) => string;
   onCardClick: (id: string) => void;
   /** A new object re-fits the view. `whole`: always show everything; otherwise focus the ego when too small. */
   fitRequest: { whole: boolean };
@@ -34,27 +31,12 @@ export const isNameHidden = (m: MaskState | null, id: string, egoId?: string) =>
 export const isKinshipHidden = (m: MaskState | null, id: string, egoId?: string) =>
   !!m?.kinship && id !== egoId && !m.revealedKinship.has(id);
 
-export function TreeView({ file, prefs, masks, onCardClick, fitRequest }: Props) {
+export function TreeView({ file, prefs, hidden, cardClass, onCardClick, fitRequest }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<SVGGElement>(null);
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
-
-  const nameFits = useMemo(
-    () => new Map(file.persons.map((p) => [p.id, fitName(personNameParts(p, prefs))])),
-    [file.persons, prefs.script, prefs.preferNickname],
-  );
-  const twoLineNames = [...nameFits.values()].some((f) => f.lines.length > 1);
-  // Furigana needs taller cards for the reading lines; two-line names need one more line.
-  const opt = useMemo(() => {
-    const furigana = prefs.script === 'furigana';
-    const base = furigana ? 100 : DEFAULT_LAYOUT.cardH;
-    return { ...DEFAULT_LAYOUT, cardH: base + (twoLineNames ? (furigana ? 26 : 18) : 0) };
-  }, [prefs.script, twoLineNames]);
-  const layout = useMemo(() => computeLayout(file, opt), [file.persons, file.unions, opt]);
-  const kin = useMemo(() => createKinship(file, file.settings.labelOverrides), [file.persons, file.unions, file.settings.labelOverrides]);
-  const persons = useMemo(() => new Map(file.persons.map((p) => [p.id, p])), [file.persons]);
-  const ego = file.settings.egoId;
-  const today = new Date();
+  const model = useTreeModel(file, prefs);
+  const { layout, opt } = model;
 
   useEffect(() => {
     const svg = svgRef.current!;
@@ -85,62 +67,7 @@ export function TreeView({ file, prefs, masks, onCardClick, fitRequest }: Props)
   return (
     <svg ref={svgRef} class={`tree script-${prefs.script}`} role="img" aria-label="家系図">
       <g ref={gRef}>
-        <g class="lines">
-          {layout.descents.map((l, i) => (
-            <path key={`d${i}`} d={l.d} />
-          ))}
-          {layout.marriages.map((l, i) => (
-            <path key={`m${i}`} d={l.d} class={l.former ? 'former' : ''} />
-          ))}
-        </g>
-        {layout.cards.map((c) => {
-          const p = persons.get(c.id)!;
-          const k = ego && prefs.showKinship ? kin.resolve(ego, c.id, { pathFallback: prefs.pathFallback }) : undefined;
-          const kinText = kinshipText(k, prefs);
-          const hideName = isNameHidden(masks, c.id, ego);
-          const hideKin = prefs.showKinship && isKinshipHidden(masks, c.id, ego) && !!kinText;
-          const fit = nameFits.get(c.id)!;
-          const fullName = rubyBase(fit.lines.join(' '));
-          const cls = [
-            'card',
-            fit.lines.length > 1 ? 'two-line-name' : '',
-            prefs.genderColor ? `g-${p.gender ?? 'none'}` : 'g-none',
-            isDeceased(p) ? 'deceased' : '',
-            c.id === ego ? 'is-ego' : '',
-            k?.kind === 'path' ? 'path' : '',
-            hideName || hideKin ? 'has-mask' : '',
-          ].join(' ');
-          const label = hideName || hideKin ? 'かくれている カード。おすと みられます' : undefined;
-          return (
-            <foreignObject key={c.id} x={c.x} y={c.y} width={opt.cardW} height={opt.cardH}>
-              <button type="button" class={cls} aria-label={label} title={hideName ? undefined : fullName} onClick={() => onCardClick(c.id)}>
-                {hideKin ? (
-                  <span class="kin masked">？</span>
-                ) : (
-                  <span class={visibleLength(kinText) > 9 ? 'kin long' : 'kin'}>
-                    <Ruby text={kinText} />
-                  </span>
-                )}
-                {hideName ? (
-                  <span class="name masked">？？？</span>
-                ) : (
-                  <span class={`name size-${fit.size}`}>
-                    {fit.lines.length ? (
-                      fit.lines.map((line, i) => (
-                        <span key={i} class="name-line">
-                          <Ruby text={line} />
-                        </span>
-                      ))
-                    ) : (
-                      '？'
-                    )}
-                  </span>
-                )}
-                {prefs.showLife && !hideName && <span class="life">{lifeText(p, today, isKana(prefs))}</span>}
-              </button>
-            </foreignObject>
-          );
-        })}
+        <TreeContent file={file} prefs={prefs} model={model} hidden={hidden} cardClass={cardClass} onCardClick={onCardClick} />
       </g>
     </svg>
   );

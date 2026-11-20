@@ -8,10 +8,13 @@ import { Modal } from './ui/Modal';
 import { PersonDialog, type DialogState } from './ui/PersonDialog';
 import { TreeView, isKinshipHidden, isNameHidden, type MaskState } from './ui/TreeView';
 import { Ruby } from './ui/Ruby';
+import { PrintDialog } from './ui/Print';
+import { QuizBar, useQuiz } from './ui/Quiz';
 import { isKana, personName } from './ui/display';
 
-type Mode = 'view' | 'edit';
+type Mode = 'view' | 'quiz' | 'edit';
 type BoolPref = { [K in keyof ViewPrefs]: ViewPrefs[K] extends boolean ? K : never }[keyof ViewPrefs];
+const EMPTY = ops.emptyFile();
 type Confirm = { message: string; action: () => void } | null;
 
 export function App() {
@@ -20,6 +23,7 @@ export function App() {
   const [mode, setMode] = useState<Mode>('view');
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [showLabels, setShowLabels] = useState(false);
+  const [showPrint, setShowPrint] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [importErrors, setImportErrors] = useState<string[] | null>(null);
@@ -28,6 +32,7 @@ export function App() {
   const [revealedNames, setRevealedNames] = useState<Set<string>>(new Set());
   const [revealedKinship, setRevealedKinship] = useState<Set<string>>(new Set());
   const fileInput = useRef<HTMLInputElement>(null);
+  const quiz = useQuiz(file ?? EMPTY, prefs, mode === 'quiz' && !!file?.persons.length);
 
   // Load once, then autosave every change (debounced).
   useEffect(() => {
@@ -39,6 +44,20 @@ export function App() {
     return () => clearTimeout(t);
   }, [file]);
   useEffect(() => savePrefs(prefs), [prefs]);
+  // Close the menu on an outside click or Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!(e.target as Element).closest?.('.menu-wrap')) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false);
+    document.addEventListener('pointerdown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(''), 3500);
@@ -169,8 +188,8 @@ export function App() {
   const ego = file.persons.find((p) => p.id === file.settings.egoId);
   const toggle = (k: BoolPref) => setPrefs((p) => ({ ...p, [k]: !p[k] }));
   const kana = isKana(prefs);
-  const quiz = mode === 'view' && (prefs.maskName || prefs.maskKinship);
-  const masks: MaskState | null = quiz
+  const maskQuiz = mode === 'view' && (prefs.maskName || prefs.maskKinship);
+  const masks: MaskState | null = maskQuiz
     ? { name: prefs.maskName, kinship: prefs.maskKinship && prefs.showKinship, revealedNames, revealedKinship }
     : null;
   const hiddenCount = file.persons.filter(
@@ -182,6 +201,7 @@ export function App() {
   };
   const onCardClick = (id: string) => {
     if (mode === 'edit') return setDialog({ kind: 'edit', id });
+    if (mode === 'quiz') return quiz.answerCard(id);
     const egoId = file.settings.egoId;
     // Quiz: the first tap reveals the hidden parts, the next one switches the viewpoint.
     if (isNameHidden(masks, id, egoId) || isKinshipHidden(masks, id, egoId)) {
@@ -217,6 +237,9 @@ export function App() {
           <button type="button" class={mode === 'view' ? 'on' : ''} onClick={() => setMode('view')}>
             みる
           </button>
+          <button type="button" class={mode === 'quiz' ? 'on' : ''} onClick={() => setMode('quiz')}>
+            クイズ
+          </button>
           <button type="button" class={mode === 'edit' ? 'on' : ''} onClick={() => setMode('edit')}>
             へんしゅう
           </button>
@@ -245,7 +268,7 @@ export function App() {
               <input type="checkbox" checked={prefs.maskKinship} onChange={() => toggle('maskKinship')} />
               {kana ? 'よびかた' : '続柄'}
             </label>
-            {quiz && (
+            {maskQuiz && (
               <>
                 <span class="quiz-count">{hiddenCount ? `あと ${hiddenCount} にん` : 'ぜんぶ わかった！'}</span>
                 <button type="button" class="small" onClick={remask}>
@@ -278,6 +301,7 @@ export function App() {
                   ['showLife', '生年・年齢'],
                   ['genderColor', '性別の色'],
                   ['preferNickname', '呼び名で表示'],
+                  ['showBirthName', '旧姓'],
                 ] as [BoolPref, string][]
               ).map(([k, label]) => (
                 <label key={k} class="menu-check" onClick={(e) => e.stopPropagation()}>
@@ -288,6 +312,9 @@ export function App() {
               <hr />
               <button type="button" onClick={() => setShowLabels(true)}>
                 呼び方の設定…
+              </button>
+              <button type="button" onClick={() => setShowPrint(true)}>
+                印刷・画像で保存…
               </button>
               <button type="button" onClick={() => downloadJson(file)}>
                 JSONで書き出す
@@ -309,14 +336,30 @@ export function App() {
       <p class="mode-hint">
         {mode === 'edit'
           ? 'カードを押すと、その人の編集・家族の追加ができます'
-          : quiz
+          : mode === 'quiz'
+            ? kana
+              ? 'もんだいに こたえてね。きじゅんを かえるときは「みる」で カードを おしてね'
+              : '問題に答えましょう。基準の人を変えるときは「みる」でカードを押します'
+          : maskQuiz
             ? 'だれかな？ カードを おして こたえを みてみよう。もう いちど おすと、その ひとから みた よびかたに かわるよ'
             : kana
               ? 'カードを おすと、その ひとから みた よびかたに かわるよ'
               : 'カードを押すと、その人から見た続柄に切り替わります'}
       </p>
       <main class="stage">
-        <TreeView file={file} prefs={prefs} masks={masks} onCardClick={onCardClick} fitRequest={fitRequest} />
+        {mode === 'quiz' && <QuizBar quiz={quiz} script={prefs.script} />}
+        <TreeView
+          file={file}
+          prefs={prefs}
+          hidden={
+            mode === 'quiz'
+              ? quiz.hidden
+              : (id) => ({ name: isNameHidden(masks, id, file.settings.egoId), kinship: isKinshipHidden(masks, id, file.settings.egoId) })
+          }
+          cardClass={mode === 'quiz' ? quiz.cardClass : undefined}
+          onCardClick={onCardClick}
+          fitRequest={fitRequest}
+        />
       </main>
       {dialog && (
         <PersonDialog
@@ -341,6 +384,7 @@ export function App() {
           }}
         />
       )}
+      {showPrint && <PrintDialog file={file} prefs={prefs} onClose={() => setShowPrint(false)} />}
       {showLabels && (
         <LabelSettings
           overrides={file.settings.labelOverrides}

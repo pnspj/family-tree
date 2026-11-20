@@ -50,6 +50,7 @@ export interface ViewPrefs {
   pathFallback: boolean;
   showSide: boolean;
   preferNickname: boolean;
+  showBirthName: boolean;
 }
 
 export const DEFAULT_PREFS: ViewPrefs = {
@@ -62,6 +63,7 @@ export const DEFAULT_PREFS: ViewPrefs = {
   pathFallback: true,
   showSide: false,
   preferNickname: false,
+  showBirthName: false,
 };
 
 const PREFS_KEY = 'family-tree:prefs';
@@ -86,13 +88,18 @@ export function savePrefs(p: ViewPrefs) {
   }
 }
 
-/** Triggers a browser download of the file as JSON. */
-export function downloadJson(file: FamilyFile) {
-  const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
+/** Triggers a browser download of a blob. */
+export function downloadBlob(blob: Blob, filename: string) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  const d = new Date();
-  a.download = `family-tree-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}.json`;
+  a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/** Triggers a browser download of the file as JSON. */
+export function downloadJson(file: FamilyFile) {
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  downloadBlob(new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' }), `family-tree-${stamp}.json`);
 }
