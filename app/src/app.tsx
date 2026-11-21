@@ -24,11 +24,14 @@ const dialogKey = (d: DialogState) => (d.kind === 'edit' ? `edit-${d.id}` : `add
 type Confirm = { message: string; action: () => void } | null;
 
 /** The menu opens leftward from its button; when the toolbar wraps and the button sits at the
- * left edge, open it rightward instead so it stays on screen. */
+ * left edge, open it rightward instead so it stays on screen (and scrolls when too tall). */
 const keepMenuOnScreen = (el: HTMLDivElement | null) => {
   if (!el) return;
   el.classList.remove('open-right');
-  if (el.getBoundingClientRect().left < 8) el.classList.add('open-right');
+  const r = el.getBoundingClientRect();
+  if (r.left < 8) el.classList.add('open-right');
+  // Scroll inside the menu when it is taller than the space below its button.
+  el.style.setProperty('--menu-top', `${Math.round(r.top)}px`);
 };
 
 export function App() {
@@ -406,10 +409,11 @@ export function App() {
                   {label}
                 </label>
               ))}
-              <hr />
               <button type="button" onClick={() => setShowLabels(true)}>
                 呼び方の設定…
               </button>
+              <hr />
+              <p class="menu-title">データ</p>
               <button type="button" onClick={() => setShowPrint(true)}>
                 印刷・画像で保存…
               </button>
@@ -419,25 +423,29 @@ export function App() {
               <button type="button" onClick={() => setShowImport(true)}>
                 JSONを読み込む…
               </button>
-              <button type="button" onClick={openAbout}>
-                このアプリについて
-              </button>
-              <a class="menu-link" href={GUIDE_URL} target="_blank" rel="noopener">
-                仕組みと注意
-              </a>
-              <a class="menu-link" href={TERMS_URL} target="_blank" rel="noopener">
-                利用規約・免責事項
-              </a>
-              <a class="menu-link" href={PRIVACY_URL} target="_blank" rel="noopener">
-                プライバシーポリシー
-              </a>
-              <hr />
               <button type="button" onClick={() => guardReplace(() => replaceFile(sampleFile()))}>
                 サンプルを開く…
               </button>
               <button type="button" class="danger-text" onClick={() => guardReplace(() => setFile(ops.emptyFile()))}>
                 新しく作り直す…
               </button>
+              <hr />
+              <p class="menu-title">このアプリ</p>
+              <button type="button" onClick={openAbout}>
+                このアプリについて
+              </button>
+              <a class="menu-link" href={GUIDE_URL} target="_blank" rel="noopener">
+                仕組みと注意<span class="ext" aria-hidden="true">↗</span><span class="sr-only">（新しいタブで開く）</span>
+              </a>
+              <p class="menu-legal">
+                <a href={TERMS_URL} target="_blank" rel="noopener">
+                  利用規約<span class="ext" aria-hidden="true">↗</span><span class="sr-only">（新しいタブで開く）</span>
+                </a>
+                <span aria-hidden="true">・</span>
+                <a href={PRIVACY_URL} target="_blank" rel="noopener">
+                  プライバシーポリシー<span class="ext" aria-hidden="true">↗</span><span class="sr-only">（新しいタブで開く）</span>
+                </a>
+              </p>
             </div>
           )}
         </div>

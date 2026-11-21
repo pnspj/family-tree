@@ -95,12 +95,20 @@ button.icon { border: none; font-size: 1.5rem; line-height: 1; padding: 0.2em 0.
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  max-height: calc(100dvh - var(--menu-top, 120px) - 8px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .menu.open-right { right: auto; left: 0; }
 .menu button { border: none; border-radius: 8px; text-align: left; }
 .menu button:hover { background: var(--accent-soft); }
 .menu hr { border: none; border-top: 1px solid var(--border); margin: 0.3rem 0; width: 100%; }
 .menu-title { margin: 0.2rem 0.5rem; font-size: 0.8rem; color: var(--muted); }
+.menu .ext { margin-left: 0.15em; font-size: 0.85em; color: var(--muted); }
+.menu-legal { margin: 0.2rem 0.5rem 0.3rem; font-size: 0.78rem; color: var(--muted); line-height: 1.8; }
+.menu-legal a { white-space: nowrap; }
+.menu-legal a { color: var(--muted); }
+.menu-legal a:hover { color: var(--text); }
 .menu-check { display: flex; gap: 0.5em; align-items: center; padding: 0.3em 0.6em; cursor: pointer; }
 .danger-text { color: var(--danger); }
 
@@ -465,3 +473,4 @@ svg.tree.demo-tree { width: 100%; min-width: 560px; height: auto; cursor: defaul
 }
 .demo-swipe { display: none; margin: 0; text-align: center; }
 @media (max-width: 600px) { .demo-swipe { display: block; } }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
