@@ -21,7 +21,6 @@
 |---|---|
 | `app/` | 本番アプリ（Vite + Preact + TypeScript） |
 | `docs/` | 設計書（[データモデルと続柄マスター](docs/data-model.md)） |
-| `proto/` | レイアウト方式の比較プロトタイプ（参考用） |
 
 ## 開発
 
