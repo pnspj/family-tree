@@ -64,3 +64,34 @@ export function sampleFile(): FamilyFile {
     settings: { egoId: 'ren', labelOverrides: {} },
   };
 }
+
+/**
+ * Small fictional family for the interactive demo on the about page (never stored).
+ * Three generations, at most four cards per row so it stays readable on phones.
+ */
+export function demoFile(): FamilyFile {
+  return {
+    format: 'family-tree',
+    version: 1,
+    persons: [
+      P('ichiro', '山田', '一郎', 'やまだ', 'いちろう', 'M', { y: 1950 }),
+      P('kazuko', '山田', '和子', 'やまだ', 'かずこ', 'F', { y: 1952 }),
+      P('hiroshi', '鈴木', '博', 'すずき', 'ひろし', 'M', { y: 1953 }),
+      P('keiko', '鈴木', '恵子', 'すずき', 'けいこ', 'F', { y: 1956 }),
+      P('makoto', '山田', '誠', 'やまだ', 'まこと', 'M', { y: 1981 }, 'u_ichiro'),
+      P('yumi', '山田', '由美', 'やまだ', 'ゆみ', 'F', { y: 1982 }),
+      P('kenichi', '山田', '健一', 'やまだ', 'けんいち', 'M', { y: 1978 }, 'u_ichiro'),
+      P('misaki', '山田', '美咲', 'やまだ', 'みさき', 'F', { y: 1984 }, 'u_hiroshi', { birthFamilyName: '鈴木', birthFamilyNameKana: 'すずき' }),
+      P('sho', '山田', '翔', 'やまだ', 'しょう', 'M', { y: 2012 }, 'u_makoto'),
+      P('ren', '山田', '蓮', 'やまだ', 'れん', 'M', { y: 2016 }, 'u_kenichi'),
+      P('aoi', '山田', '葵', 'やまだ', 'あおい', 'F', { y: 2019 }, 'u_kenichi'),
+    ],
+    unions: [
+      U('u_ichiro', 'ichiro', 'kazuko'),
+      U('u_hiroshi', 'hiroshi', 'keiko'),
+      U('u_makoto', 'makoto', 'yumi'),
+      U('u_kenichi', 'kenichi', 'misaki'),
+    ],
+    settings: { egoId: 'ren', labelOverrides: {} },
+  };
+}

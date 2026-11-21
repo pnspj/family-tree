@@ -410,3 +410,68 @@ ruby rt { font-size: 0.55em; font-weight: 500; color: var(--muted); letter-spaci
 .consent-checks { display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0; }
 .consent-checks .check { display: flex; gap: 0.5em; align-items: flex-start; cursor: pointer; font-weight: 700; }
 .consent-checks input { width: 1.2em; height: 1.2em; margin-top: 0.25em; flex: none; accent-color: var(--accent); }
+
+/* ---- about page ---- */
+.link-button { border: none; background: none; color: #1d4ed8; font-weight: 700; text-decoration: underline; padding: 0.3em 0.5em; }
+.about { max-width: 880px; margin: 0 auto; padding: calc(2.5rem + env(safe-area-inset-top, 0px)) 1rem calc(3rem + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 2.5rem; }
+.about a { color: #1d4ed8; font-weight: 700; }
+.about-hero { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+.about-hero h1 { font-size: 2.6rem; margin: 0; letter-spacing: 0.1em; }
+.about-catch { margin: 0; font-size: clamp(1.4rem, 4.5vw, 2rem); font-weight: 800; color: var(--accent); line-height: 1.4; }
+.about-lead { margin: 0; font-size: 1.05rem; line-height: 1.8; max-width: 34em; }
+.about-action { margin-top: 0.6rem; }
+.about-start { padding: 0.8em 3em; font-size: 1.15rem; border-radius: 999px; }
+.about-sec h2 { margin: 0 0 0.8rem; font-size: clamp(1.25rem, 3.6vw, 1.6rem); line-height: 1.5; padding-left: 0.7rem; border-left: 6px solid var(--accent); }
+.about-points { margin: 0 0 1.2rem; padding-left: 1.3em; line-height: 1.85; }
+.about-points li { margin: 0.2rem 0; }
+.about-footer { display: flex; flex-direction: column; align-items: center; }
+.about-footer .consent-card { scroll-margin-top: 1rem; }
+.about-back { display: flex; justify-content: center; }
+.about-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem 1.4rem; margin: -1rem 0 0; font-size: 0.9rem; }
+
+.demo { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 0.8rem; box-shadow: 0 6px 20px rgb(0 0 0 / 0.06); }
+.demo-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; }
+.demo-bar .quiz { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.8rem; }
+.demo-hint { margin: 0.6rem 0 0.2rem; font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
+.demo-hint strong { color: var(--text); }
+.demo-scroll { overflow-x: auto; }
+svg.tree.demo-tree { width: 100%; min-width: 560px; height: auto; cursor: default; touch-action: manipulation; }
+.demo-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.3rem; }
+
+.about-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 1rem; }
+.about-fig { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.6rem; }
+.about-fig svg { width: 100%; height: auto; display: block; }
+.about-fig-wide svg { max-width: 600px; margin: 0 auto; }
+.about-fig figcaption { font-size: 0.88rem; color: var(--muted); text-align: center; }
+.fig-link path { stroke: var(--line); stroke-width: 2; stroke-dasharray: 5 4; fill: none; }
+.fig-spot { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; }
+.fig-spot-text { fill: var(--accent); font-size: 14px; font-weight: 800; }
+.fig-card { fill: var(--male-bg); stroke: var(--male); stroke-width: 2; }
+.fig-kin { fill: var(--accent); font-size: 12px; font-weight: 800; }
+.fig-name { fill: var(--text); font-size: 15px; font-weight: 700; }
+.fig-fields { margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.fig-fields div { display: grid; grid-template-columns: 6.5em 1fr; gap: 0.5rem; align-items: baseline; }
+.fig-fields dt { font-size: 0.85rem; color: var(--muted); font-weight: 700; }
+.fig-fields dd { margin: 0; padding: 0.3em 0.6em; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); font-size: 0.9rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2em 0.6em; }
+.fig-optional { font-size: 0.72rem; color: #2e7d4f; font-weight: 700; white-space: nowrap; }
+.fig-server { fill: #e6f0fd; stroke: #3f7fd8; stroke-width: 2.5; }
+.fig-device { fill: #fff; stroke: var(--text); stroke-width: 2.5; }
+.fig-browser { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.fig-data { fill: #fff; stroke: #2e7d4f; stroke-width: 2.5; }
+.fig-title { fill: var(--text); font-size: 15px; font-weight: 800; }
+.fig-text { fill: var(--text); font-size: 13px; font-weight: 700; }
+.fig-small { fill: var(--muted); font-size: 12px; }
+.fig-blue { fill: #3f7fd8; font-size: 14px; font-weight: 800; }
+.fig-red { fill: var(--danger); font-size: 14px; font-weight: 800; }
+.fig-arrow { stroke: #3f7fd8; stroke-width: 3; }
+.fig-ah { fill: #3f7fd8; }
+.fig-arrow-no { stroke: var(--danger); stroke-width: 3; stroke-dasharray: 7 6; }
+.fig-no { fill: #fff; stroke: var(--danger); stroke-width: 3; }
+.fig-no-x { stroke: var(--danger); stroke-width: 3; }
+.about-fig .fig-narrow { display: none; max-width: 320px; margin: 0 auto; }
+@media (max-width: 560px) {
+  .about-fig .fig-wide { display: none; }
+  .about-fig .fig-narrow { display: block; }
+}
+.demo-swipe { display: none; margin: 0; text-align: center; }
+@media (max-width: 600px) { .demo-swipe { display: block; } }

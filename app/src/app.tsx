@@ -11,6 +11,7 @@ import { Ruby } from './ui/Ruby';
 import { PrintDialog } from './ui/Print';
 import { ExportDialog, GUIDE_URL, ImportDialog } from './ui/DataDialogs';
 import { ConsentScreen } from './ui/Consent';
+import { AboutPage } from './ui/About';
 import { PRIVACY_URL, TERMS_URL, hasCurrentConsent, loadConsent, requestPersistentStorage, saveConsent } from './legal';
 import { QuizBar, useQuiz } from './ui/Quiz';
 import { isKana, personName } from './ui/display';
@@ -33,6 +34,9 @@ export function App() {
   const [showImport, setShowImport] = useState(false);
   // Terms / privacy consent by an adult, required before anything else (re-asked when the terms change).
   const [consented, setConsented] = useState(hasCurrentConsent);
+  // "About this app" page, opened from the menu as #about (so the browser's back button returns).
+  const [about, setAbout] = useState(() => location.hash === '#about');
+  const aboutFromApp = useRef(false);
   const [focusRequest, setFocusRequest] = useState<{ id: string } | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const focusCard = (id: string | undefined) => id && setFocusRequest({ id });
@@ -47,15 +51,23 @@ export function App() {
   const quiz = useQuiz(file ?? EMPTY, prefs, mode === 'quiz' && !!file?.persons.length);
 
   // Load once, then autosave every change (debounced).
+  // Nothing touches storage before consent.
   useEffect(() => {
-    loadFile().then((f) => setFile(f ?? null));
-  }, []);
+    if (consented) loadFile().then((f) => setFile(f ?? null));
+  }, [consented]);
   useEffect(() => {
     if (!file) return;
     const t = setTimeout(() => saveFile(file).catch(() => setToast('ブラウザに保存できませんでした')), 400);
     return () => clearTimeout(t);
   }, [file]);
-  useEffect(() => savePrefs(prefs), [prefs]);
+  useEffect(() => {
+    if (consented) savePrefs(prefs);
+  }, [prefs, consented]);
+  useEffect(() => {
+    const onHash = () => setAbout(location.hash === '#about');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
   // Ask the browser to keep this site's storage (no prompt in most browsers once granted).
   useEffect(() => {
     if (consented) requestPersistentStorage();
@@ -114,6 +126,10 @@ export function App() {
     replaceFile(r.file); // the import dialog already warned about replacing and got agreement
   };
   const openImport = () => fileInput.current?.click();
+  const openAbout = () => {
+    aboutFromApp.current = true;
+    location.hash = 'about';
+  };
   // Cancelling a person dialog returns focus to the card it was opened from.
   const closeDialog = () => {
     if (dialog) focusCard(dialog.kind === 'edit' ? dialog.id : dialog.baseId);
@@ -134,6 +150,22 @@ export function App() {
         }}
       />
     );
+  if (about) {
+    const back = () => {
+      if (aboutFromApp.current) history.back();
+      else {
+        history.replaceState(null, '', location.pathname + location.search);
+        setAbout(false);
+      }
+      aboutFromApp.current = false;
+    };
+    const backButton = (
+      <button type="button" class="primary about-start" onClick={back}>
+        かけいずに戻る
+      </button>
+    );
+    return <AboutPage action={backButton} footer={<div class="about-back">{backButton}</div>} />;
+  }
   if (file === undefined) return <div class="loading">読み込み中…</div>;
 
   const hiddenInput = <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={onImport} />;
@@ -203,6 +235,9 @@ export function App() {
           </button>
         </div>
         <p class="hint">データはこのブラウザの中だけに保存され、どこにも送信されません。</p>
+        <button type="button" class="link-button" onClick={openAbout}>
+          このアプリについて
+        </button>
         {dialog && (
           <PersonDialog
             key={dialogKey(dialog)}
@@ -375,6 +410,9 @@ export function App() {
               </button>
               <button type="button" onClick={() => setShowImport(true)}>
                 JSONを読み込む…
+              </button>
+              <button type="button" onClick={openAbout}>
+                このアプリについて
               </button>
               <a class="menu-link" href={GUIDE_URL} target="_blank" rel="noopener">
                 しくみと注意（せつめい）
