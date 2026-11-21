@@ -4,7 +4,7 @@ import { openParentUnion, parentCount, unionCount, wouldSplit, MAX_UNIONS_PER_PE
 import type { FamilyFile, Gender, PartialDate, Person, Union } from '../core/types';
 import { kinshipText } from './display';
 import { rubyBase } from '../core/kinshipMaster';
-import type { Script } from '../storage';
+import type { Script } from '../prefs';
 import { Modal } from './Modal';
 
 export type Relation = 'first' | 'parent' | 'spouse' | 'child' | 'sibling';

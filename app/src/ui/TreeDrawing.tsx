@@ -6,7 +6,7 @@ import { createKinship, type KinshipResolver } from '../core/kinship';
 import { rubyBase } from '../core/kinshipMaster';
 import type { FamilyFile } from '../core/types';
 import { computeLayout, DEFAULT_LAYOUT, type LayoutOptions, type LayoutResult } from '../layout/layout';
-import type { ViewPrefs } from '../storage';
+import type { ViewPrefs } from '../prefs';
 import { birthNameText, fitName, isKana, kinshipText, lifeText, personNameParts, visibleLength, type NameFit } from './display';
 import { Ruby } from './Ruby';
 

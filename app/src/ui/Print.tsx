@@ -1,7 +1,8 @@
 // Print sheet (one page, optional fill-in worksheet) and SVG / PNG export.
 import { useRef, useState } from 'preact/hooks';
 import type { FamilyFile } from '../core/types';
-import { downloadBlob, type ViewPrefs } from '../storage';
+import type { ViewPrefs } from '../prefs';
+import { downloadBlob } from '../storage';
 import { Modal } from './Modal';
 import { TreeContent, useTreeModel } from './TreeDrawing';
 

@@ -3,17 +3,9 @@ import { useEffect, useRef } from 'preact/hooks';
 import { select } from 'd3-selection';
 import { zoom as d3zoom, zoomIdentity, zoomTransform, type ZoomBehavior } from 'd3-zoom';
 import type { FamilyFile } from '../core/types';
-import type { ViewPrefs } from '../storage';
+import type { ViewPrefs } from '../prefs';
 import { NAV_KEYS, neighborCard, type NavKey } from './cardNav';
 import { TreeContent, useTreeModel, type CardHidden } from './TreeDrawing';
-
-/** What is currently hidden on each card (mask mode). */
-export interface MaskState {
-  name: boolean;
-  kinship: boolean;
-  revealedNames: Set<string>;
-  revealedKinship: Set<string>;
-}
 
 interface Props {
   file: FamilyFile;
@@ -29,10 +21,6 @@ interface Props {
 
 const PAD = 40;
 const MIN_READABLE_SCALE = 0.55;
-
-export const isNameHidden = (m: MaskState | null, id: string, egoId?: string) => !!m?.name && id !== egoId && !m.revealedNames.has(id);
-export const isKinshipHidden = (m: MaskState | null, id: string, egoId?: string) =>
-  !!m?.kinship && id !== egoId && !m.revealedKinship.has(id);
 
 export function TreeView({ file, prefs, hidden, cardClass, onCardClick, fitRequest, focusRequest }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);

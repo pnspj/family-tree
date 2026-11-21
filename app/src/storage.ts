@@ -1,4 +1,4 @@
-// Browser-only persistence: the family file in IndexedDB, view preferences in localStorage.
+// Browser-only persistence of the family file (IndexedDB) and file downloads.
 import type { FamilyFile } from './core/types';
 
 const DB_NAME = 'family-tree';
@@ -36,57 +36,6 @@ export async function loadFile(): Promise<FamilyFile | undefined> {
 }
 
 export const saveFile = (file: FamilyFile) => tx('readwrite', (s) => s.put(file, KEY));
-export const clearFile = () => tx('readwrite', (s) => s.delete(KEY));
-
-export type Script = 'kanji' | 'furigana' | 'kana';
-
-export interface ViewPrefs {
-  script: Script;
-  maskName: boolean;
-  maskKinship: boolean;
-  showKinship: boolean;
-  showLife: boolean;
-  genderColor: boolean;
-  pathFallback: boolean;
-  showSide: boolean;
-  preferNickname: boolean;
-  showBirthName: boolean;
-}
-
-export const DEFAULT_PREFS: ViewPrefs = {
-  script: 'kanji',
-  maskName: false,
-  maskKinship: false,
-  showKinship: true,
-  showLife: true,
-  genderColor: true,
-  pathFallback: true,
-  showSide: false,
-  preferNickname: false,
-  showBirthName: false,
-};
-
-const PREFS_KEY = 'family-tree:prefs';
-
-export function loadPrefs(): ViewPrefs {
-  try {
-    const saved = JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}');
-    // v1 stored a boolean `kana` instead of `script`
-    if (typeof saved.kana === 'boolean' && !saved.script) saved.script = saved.kana ? 'kana' : 'kanji';
-    delete saved.kana;
-    return { ...DEFAULT_PREFS, ...saved };
-  } catch {
-    return DEFAULT_PREFS;
-  }
-}
-
-export function savePrefs(p: ViewPrefs) {
-  try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(p));
-  } catch {
-    // storage unavailable (private mode etc.): preferences just aren't remembered
-  }
-}
 
 /** Triggers a browser download of a blob. */
 export function downloadBlob(blob: Blob, filename: string) {

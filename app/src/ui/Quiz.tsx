@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { createKinship } from '../core/kinship';
 import { isCorrectFind, makeQuestion, type Label, type Question } from '../core/quiz';
 import type { FamilyFile } from '../core/types';
-import type { Script, ViewPrefs } from '../storage';
+import type { Script, ViewPrefs } from '../prefs';
 import { personName } from './display';
 import { Ruby } from './Ruby';
 import type { CardHidden } from './TreeDrawing';
@@ -87,7 +87,9 @@ export function useQuiz(file: FamilyFile, prefs: ViewPrefs, active: boolean) {
   return { question, feedback, score, next, answerCard, answerChoice, hidden, cardClass, name, egoName: ego ? name(ego) : '' };
 }
 
-export function QuizBar({ quiz, script }: { quiz: ReturnType<typeof useQuiz>; script: Script }) {
+export type Quiz = ReturnType<typeof useQuiz>;
+
+export function QuizBar({ quiz, script }: { quiz: Quiz; script: Script }) {
   const { question: q, feedback, score } = quiz;
   const kana = script === 'kana';
   if (!q)

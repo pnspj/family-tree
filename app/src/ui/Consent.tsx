@@ -1,9 +1,8 @@
 // First screen: the about page with the consent card at the bottom. An adult (guardian) reads the
 // terms, disclaimer and privacy policy and agrees. After a terms update only the card is shown.
 import { useRef, useState } from 'preact/hooks';
-import { PRIVACY_URL, TERMS_URL } from '../legal';
+import { GUIDE_URL, PRIVACY_URL, TERMS_URL } from '../legal';
 import { AboutPage } from './About';
-import { GUIDE_URL } from './DataDialogs';
 
 export function ConsentScreen({ renewed, onAgree }: { renewed: boolean; onAgree: () => void }) {
   const [showAbout, setShowAbout] = useState(!renewed);

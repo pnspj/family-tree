@@ -221,7 +221,7 @@ export function deletePerson(file: FamilyFile, personId: string): OpResult {
 
 export function setEgo(file: FamilyFile, personId: string): OpResult {
   if (!file.persons.some((p) => p.id === personId)) return fail('人物が見つかりません');
-  return { ok: true, file: { ...file, settings: { ...file.settings, egoId: personId } } };
+  return { ok: true, file: { ...file, settings: { ...file.settings, egoId: personId } }, personId };
 }
 
 export function setLabelOverride(file: FamilyFile, labelId: string, override: LabelOverride | undefined): OpResult {

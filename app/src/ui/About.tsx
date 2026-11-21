@@ -2,18 +2,16 @@
 // Shown before consent (with the consent card at the bottom) and from the menu afterwards.
 import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import * as ops from '../core/ops';
 import { demoFile } from '../core/sample';
-import type { FamilyFile } from '../core/types';
-import { PRIVACY_URL, TERMS_URL } from '../legal';
-import { DEFAULT_PREFS, type Script, type ViewPrefs } from '../storage';
-import { GUIDE_URL } from './DataDialogs';
+import { GUIDE_URL, PRIVACY_URL, TERMS_URL } from '../legal';
+import { DEFAULT_PREFS, type Script, type ViewPrefs } from '../prefs';
+import { MaskControls, ScriptSwitch } from './controls';
 import { isKana, personName } from './display';
+import { countHidden, hiddenParts, masksFor, NO_REVEAL, tapCard, type View } from './masks';
 import { Ruby } from './Ruby';
 import { TreeContent, useTreeModel } from './TreeDrawing';
 // Captured from the sample family by tools/capture_form.mjs.
 import personFormShot from '../assets/person-form.png';
-import { isKinshipHidden, isNameHidden, type MaskState } from './TreeView';
 
 const PAD = 16;
 
@@ -99,43 +97,22 @@ export function AboutPage(props: {
 
 /** The real tree drawing with a small fictional family. Kept in memory only (never saved). */
 function KinshipDemo() {
-  const [file, setFile] = useState<FamilyFile>(demoFile);
+  const start = (): View => ({ file: demoFile(), reveal: NO_REVEAL });
+  const [view, setView] = useState<View>(start);
   const [script, setScript] = useState<Script>('kanji');
-  const [maskName, setMaskName] = useState(false);
-  const [maskKinship, setMaskKinship] = useState(false);
-  const [revealedNames, setRevealedNames] = useState<Set<string>>(new Set());
-  const [revealedKinship, setRevealedKinship] = useState<Set<string>>(new Set());
-  const prefs: ViewPrefs = useMemo(() => ({ ...DEFAULT_PREFS, script, maskName, maskKinship }), [script, maskName, maskKinship]);
+  const [mask, setMask] = useState({ name: false, kinship: false });
+  const prefs: ViewPrefs = useMemo(() => ({ ...DEFAULT_PREFS, script, maskName: mask.name, maskKinship: mask.kinship }), [script, mask]);
+  const { file, reveal } = view;
   const model = useTreeModel(file, prefs);
   const { layout } = model;
   const egoId = file.settings.egoId;
   const ego = file.persons.find((p) => p.id === egoId);
   const kana = isKana(prefs);
-  const masks: MaskState | null =
-    maskName || maskKinship ? { name: maskName, kinship: maskKinship, revealedNames, revealedKinship } : null;
-  const hiddenCount = file.persons.filter((p) => isNameHidden(masks, p.id, egoId) || isKinshipHidden(masks, p.id, egoId)).length;
-  const remask = () => {
-    setRevealedNames(new Set());
-    setRevealedKinship(new Set());
-  };
-  const onCardClick = (id: string) => {
-    if (isNameHidden(masks, id, egoId) || isKinshipHidden(masks, id, egoId)) {
-      setRevealedNames((s) => new Set(s).add(id));
-      setRevealedKinship((s) => new Set(s).add(id));
-      return;
-    }
-    const r = ops.setEgo(file, id);
-    if (r.ok && id !== egoId) {
-      setFile(r.file);
-      setRevealedKinship(new Set());
-    }
-  };
+  const masks = masksFor(prefs);
   const reset = () => {
-    setFile(demoFile());
+    setView(start());
     setScript('kanji');
-    setMaskName(false);
-    setMaskKinship(false);
-    remask();
+    setMask({ name: false, kinship: false });
   };
   const w = layout.width + PAD * 2;
   const h = layout.height + PAD * 2;
@@ -143,7 +120,7 @@ function KinshipDemo() {
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = scroller.current;
-    const card = layout.cards.find((c) => c.id === demoFile().settings.egoId);
+    const card = layout.cards.find((c) => c.id === egoId);
     if (!el || !card || el.scrollWidth <= el.clientWidth) return;
     const x = ((card.x + model.opt.cardW / 2 + PAD) / w) * el.scrollWidth;
     el.scrollLeft = x - el.clientWidth / 2;
@@ -151,38 +128,15 @@ function KinshipDemo() {
   return (
     <div class="demo" role="group" aria-label="続柄の切り替えを試せる見本">
       <div class="demo-bar">
-        <div class="seg" role="group" aria-label="文字">
-          {(
-            [
-              ['kanji', 'かんじ'],
-              ['furigana', 'ふりがな'],
-              ['kana', 'ひらがな'],
-            ] as [Script, string][]
-          ).map(([s, label]) => (
-            <button type="button" key={s} class={script === s ? 'on' : ''} aria-pressed={script === s} onClick={() => setScript(s)}>
-              {label}
-            </button>
-          ))}
-        </div>
-        <div class="quiz" role="group" aria-label="クイズ">
-          <span class="quiz-title">{kana ? 'かくす' : '隠す'}：</span>
-          <label class="switch">
-            <input type="checkbox" checked={maskName} onChange={() => setMaskName(!maskName)} />
-            {kana ? 'なまえ' : '名前'}
-          </label>
-          <label class="switch">
-            <input type="checkbox" checked={maskKinship} onChange={() => setMaskKinship(!maskKinship)} />
-            {kana ? 'よびかた' : '続柄'}
-          </label>
-          {masks && (
-            <>
-              <span class="quiz-count">{hiddenCount ? `あと ${hiddenCount} にん` : 'ぜんぶ わかった！'}</span>
-              <button type="button" class="small" onClick={remask}>
-                もういちど かくす
-              </button>
-            </>
-          )}
-        </div>
+        <ScriptSwitch script={script} onChange={setScript} />
+        <MaskControls
+          kana={kana}
+          name={mask.name}
+          kinship={mask.kinship}
+          onToggle={(part) => setMask({ ...mask, [part]: !mask[part] })}
+          left={masks ? countHidden(file.persons, masks, reveal, egoId) : undefined}
+          onRemask={() => setView({ ...view, reveal: NO_REVEAL })}
+        />
       </div>
       <p class="demo-hint" aria-live="polite">
         {kana ? 'きじゅん' : '基準'}：<strong>{ego ? <Ruby text={personName(ego, prefs)} /> : '—'}</strong>
@@ -199,8 +153,8 @@ function KinshipDemo() {
             file={file}
             prefs={prefs}
             model={model}
-            hidden={(id) => ({ name: isNameHidden(masks, id, egoId), kinship: isKinshipHidden(masks, id, egoId) })}
-            onCardClick={onCardClick}
+            hidden={(id) => hiddenParts(masks, reveal, egoId, id)}
+            onCardClick={(id) => setView(tapCard(view, masks, id))}
           />
         </svg>
       </div>

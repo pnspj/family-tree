@@ -2,7 +2,7 @@
 import { isDeceased, yearsBetween } from '../core/date';
 import type { Kinship } from '../core/kinship';
 import type { PartialDate, Person } from '../core/types';
-import type { Script, ViewPrefs } from '../storage';
+import type { Script, ViewPrefs } from '../prefs';
 
 const join = (a?: string, b?: string) => [a, b].filter(Boolean).join(' ');
 const esc = (s: string) => s.replace(/[{}|]/g, '');
