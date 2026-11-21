@@ -48,6 +48,7 @@ npm run preview   # ビルド結果をローカルで確認
 | [tools/build_guide.py](tools/build_guide.py) | 仕組みと注意のページ（`app/public/guide.html`）を生成：`python3 tools/build_guide.py` |
 | [tools/build_legal.py](tools/build_legal.py) | 利用規約・プライバシーポリシーを生成：`python3 tools/build_legal.py` |
 | [tools/capture_form.mjs](tools/capture_form.mjs) | 編集画面の画像（`app/src/assets/person-form.png`）を見本の家族から撮り直す（開発サーバーと Playwright が必要） |
+| [tools/capture_og.mjs](tools/capture_og.mjs) | リンク共有時のプレビュー画像（`app/public/og.png`）とホーム画面用アイコン（`apple-touch-icon.png`）をサンプルの家族から作り直す（開発サーバーと Playwright が必要） |
 
 ## 公開
 
