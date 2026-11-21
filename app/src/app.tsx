@@ -23,6 +23,14 @@ const EMPTY = ops.emptyFile();
 const dialogKey = (d: DialogState) => (d.kind === 'edit' ? `edit-${d.id}` : `add-${d.relation}-${d.baseId ?? ''}-${d.unionId ?? ''}`);
 type Confirm = { message: string; action: () => void } | null;
 
+/** The menu opens leftward from its button; when the toolbar wraps and the button sits at the
+ * left edge, open it rightward instead so it stays on screen. */
+const keepMenuOnScreen = (el: HTMLDivElement | null) => {
+  if (!el) return;
+  el.classList.remove('open-right');
+  if (el.getBoundingClientRect().left < 8) el.classList.add('open-right');
+};
+
 export function App() {
   const [file, setFile] = useState<FamilyFile | null | undefined>(undefined); // undefined = loading
   const [prefs, setPrefs] = useState<ViewPrefs>(loadPrefs);
@@ -380,7 +388,7 @@ export function App() {
             メニュー ▾
           </button>
           {menuOpen && (
-            <div class="menu" onClick={() => setMenuOpen(false)}>
+            <div class="menu" ref={keepMenuOnScreen} onClick={() => setMenuOpen(false)}>
               <p class="menu-title">表示</p>
               {(
                 [
