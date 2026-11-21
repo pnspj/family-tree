@@ -182,6 +182,12 @@ function collectCss(): string {
   return out.join('\n');
 }
 
+/**
+ * A <style> element for an SVG (XML) document. The CSS goes into CDATA: minified CSS contains
+ * characters such as `<` (e.g. `@media (width<=520px)`) that would otherwise break the XML.
+ */
+export const xmlStyle = (css: string) => `<style><![CDATA[${css.replaceAll(']]>', ']]]]><![CDATA[>')}]]></style>`;
+
 const escapeXml = (s: string) => s.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c]!);
 
 /** Self-contained SVG document: tree + title + embedded styles on a white background. */
@@ -196,7 +202,7 @@ export function standaloneSvg(svg: SVGSVGElement, title: string, date: string): 
   clone.setAttribute('height', String(vb[3]));
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
   const extras =
-    `<style>${collectCss()}\nsvg{background:#fff}</style>` +
+    xmlStyle(`${collectCss()}\nsvg{background:#fff}`) +
     `<rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="#fff"/>` +
     (title
       ? `<text x="${x + w / 2}" y="${y - head / 2 + 10}" text-anchor="middle" font-size="28" font-weight="700" fill="#2b2724">${escapeXml(title)}</text>`
