@@ -1,0 +1,115 @@
+/* Modal dialogs and their contents: person form, relatives, label settings, JSON caution notes. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgb(30 25 20 / 0.4);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.modal {
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.2);
+}
+.modal.wide { width: min(860px, 100%); }
+.modal header {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.modal h2 { margin: 0; font-size: 1.2rem; }
+.modal .subtitle { margin: 0.2rem 0 0; color: var(--accent); font-weight: 600; font-size: 0.9rem; }
+.modal-body { padding: 1rem 1.25rem 1.25rem; }
+
+.form-actions, .dialog-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: flex-end; }
+.dialog-actions { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); justify-content: space-between; }
+.confirm { width: 100%; background: var(--danger-bg); border-radius: 10px; padding: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.confirm p { margin: 0; width: 100%; }
+
+/* Text fields and selects share one look. */
+.person-form input[type='text'], .person-form input[type='number'], .label-table input, .label-toolbar input, select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45em 0.6em;
+  background: #fff;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+/* ---- person dialog ---- */
+.person-form { display: flex; flex-direction: column; gap: 0.8rem; }
+.person-form .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem; }
+.person-form label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--muted); }
+.person-form details summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; margin-bottom: 0.5rem; }
+.person-form details > .row + .row { margin-top: 0.6rem; }
+.person-form fieldset { border: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; align-items: center; }
+.person-form legend { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.2rem; }
+.person-form label.radio, .person-form label.check { flex-direction: row; align-items: center; gap: 0.35em; color: var(--text); font-size: 1rem; }
+.gender-label { width: 10em; }
+.date-input { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.date-input > span:first-child { font-size: 0.85rem; color: var(--muted); width: 100%; }
+.date-part { display: inline-flex; align-items: center; gap: 0.2rem; }
+
+.relatives { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.relatives.top { margin: 0 0 1rem; padding: 0 0 1rem; border-top: none; border-bottom: 1px solid var(--border); }
+.relatives h3 { font-size: 0.95rem; margin: 0 0 0.5rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chips button { background: var(--accent-soft); border-color: transparent; }
+.marriages { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.marriages li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+
+.as-parent { display: flex; gap: 0.6rem; align-items: flex-start; margin-bottom: 1rem; padding: 0.7rem 0.8rem; border-radius: 10px; background: var(--accent-soft); cursor: pointer; }
+.as-parent input { width: 1.2em; height: 1.2em; margin-top: 0.15em; accent-color: var(--accent); flex: none; }
+.as-parent span { display: flex; flex-direction: column; gap: 0.2rem; font-weight: 700; }
+.as-parent small { font-weight: 400; color: var(--muted); font-size: 0.8rem; }
+
+.repair { margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid var(--border); }
+.repair summary { cursor: pointer; color: var(--muted); }
+.repair label { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.8rem; font-size: 0.85rem; color: var(--muted); }
+.repair .inline { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.repair select { flex: 1; min-width: 12em; max-width: 100%; }
+
+/* ---- label settings ---- */
+.label-toolbar { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+.label-toolbar input { flex: 1; }
+.label-table-wrap { overflow-x: auto; }
+.label-table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+/* Long standard labels wrap and inputs fill their column, so the table never gets wider than the
+   dialog (fixed widths + nowrap overflowed by a few px with wider Windows fonts). */
+.label-table th, .label-table td { padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+.label-table th { white-space: nowrap; }
+.label-table td:nth-child(2), .label-table td:nth-child(4) { width: 26%; }
+.label-table td:last-child { white-space: nowrap; }
+.label-table input { width: 100%; min-width: 6em; font-size: 0.9rem; }
+.label-table tr.changed td { background: var(--accent-soft); }
+/* Phones: each label becomes a small 2-column grid (standard wording | custom wording). */
+@media (max-width: 600px) {
+  .label-table thead { display: none; }
+  .label-table tr { display: grid; grid-template-columns: minmax(5em, 40%) 1fr; gap: 0.3rem 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+  .label-table td { display: block; border: none; padding: 0; width: auto !important; }
+  .label-table td:last-child { grid-column: 1 / -1; text-align: right; }
+  .label-table td:last-child:empty { display: none; }
+}
+
+/* ---- caution dialogs (JSON export / import) ---- */
+.caution { border: 3px solid #e0a100; background: #fff7d6; border-radius: 12px; padding: 0.8rem 1rem; margin-bottom: 1rem; }
+.caution-title { margin: 0 0 0.3rem; font-size: 1.3rem; font-weight: 900; color: #a15c00; }
+.caution p { margin: 0; line-height: 1.8; font-size: 1.05rem; }
+.caution .guide-link { margin-top: 0.6rem; font-size: 0.95rem; }
+.caution a, .adult-note a { color: var(--link); font-weight: 700; }
+.adult-note { margin-bottom: 1rem; font-size: 0.9rem; }
+.adult-note summary { cursor: pointer; font-weight: 700; }
+.adult-note ul { margin: 0.5rem 0 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 0.3rem; }
+.adult-note ul ul { margin-top: 0.3rem; }
+.agree { display: flex; gap: 0.5em; align-items: center; cursor: pointer; font-weight: 700; margin: 0.8rem 0; }

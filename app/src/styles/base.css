@@ -1,0 +1,85 @@
+/* Design tokens, reset, buttons and small shared utilities. */
+:root {
+  --bg: #fbf8f3;
+  --surface: #ffffff;
+  --text: #2b2724;
+  --muted: #6f6760;
+  --line: #8a817a;
+  --border: #ddd5cc;
+  --accent: #e07a2f;
+  --accent-soft: #fdeedf;
+  --blue: #3f7fd8;
+  --blue-soft: #e6f0fd;
+  --male: var(--blue);
+  --male-bg: var(--blue-soft);
+  --female: #d8486b;
+  --female-bg: #fde8ee;
+  --other: #8a817a;
+  --other-bg: #f1eeea;
+  --ok: #2e9d5b;
+  --ok-bg: #e3f6ea;
+  --danger: #c0392b;
+  --danger-bg: #fdecea;
+  --link: #1d4ed8;
+  --focus: #1f1a17;
+  --radius: 12px;
+  --shadow-card: 0 6px 20px rgb(0 0 0 / 0.06);
+  color-scheme: light;
+  font-family: 'Hiragino Maru Gothic ProN', 'Zen Maru Gothic', 'BIZ UDPGothic', 'Noto Sans JP', system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+
+button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 0.45em 1em;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+button.danger-outline { color: var(--danger); border-color: var(--danger); }
+button.small { padding: 0.2em 0.7em; font-size: 0.85em; }
+button.icon { border: none; font-size: 1.5rem; line-height: 1; padding: 0.2em 0.4em; }
+.link-button { border: none; background: none; color: var(--link); font-weight: 700; text-decoration: underline; padding: 0.3em 0.5em; }
+
+.hint { color: var(--muted); font-size: 0.85rem; }
+.error { color: var(--danger); font-weight: 600; }
+.errors { padding-left: 1.2em; color: var(--danger); }
+.danger-text { color: var(--danger); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Segmented control (mode / script switches) and toggle switches. */
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+.seg button { border: none; border-radius: 0; }
+.seg button.on { background: var(--accent); color: #fff; font-weight: 700; }
+.switch { display: inline-flex; align-items: center; gap: 0.35em; cursor: pointer; }
+.switch input { width: 1.2em; height: 1.2em; accent-color: var(--accent); }
+
+/* Furigana: readings are drawn small above the base text. */
+ruby rt { font-size: 0.55em; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+
+/* Keyboard focus: a dark ring, distinct from the blue / pink / grey card borders and the orange accent. */
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.loading { display: grid; place-items: center; height: 100%; color: var(--muted); }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: var(--text);
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  z-index: 100;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.2);
+}

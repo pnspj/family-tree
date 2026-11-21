@@ -1,0 +1,48 @@
+/* Print dialog and the printed sheet. */
+
+/* ---- print dialog ---- */
+.print-options { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1rem; }
+.print-options label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--muted); }
+.print-options label.check { flex-direction: row; align-items: center; gap: 0.4em; color: var(--text); font-size: 1rem; }
+.print-options .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.print-options input[type='text'] { border: 1px solid var(--border); border-radius: 8px; padding: 0.45em 0.6em; font-size: 1rem; }
+.print-options fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 0.5rem 0.8rem; display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; }
+.print-options fieldset .hint { width: 100%; margin: 0; }
+.print-options legend { font-size: 0.85rem; color: var(--muted); padding: 0 0.3rem; }
+
+/* Preview of the sheet; sized from --sheet-w / --sheet-h / --tree-h (set from script) when printing. */
+.print-sheet {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08);
+  padding: 2%;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+.print-sheet .sheet-title { margin: 0 0 0.3rem; font-size: 1.1rem; text-align: center; }
+.print-sheet svg { flex: 1; min-height: 0; width: 100%; }
+.print-sheet .sheet-footer { margin: 0; font-size: 0.7rem; color: var(--muted); text-align: right; min-height: 1em; }
+
+@media print {
+  body.printing * { visibility: hidden; }
+  body.printing .print-sheet,
+  body.printing .print-sheet * { visibility: visible; }
+  body.printing .overlay { position: static; background: none; padding: 0; display: block; }
+  body.printing .print-sheet {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: var(--sheet-w);
+    height: var(--sheet-h);
+    aspect-ratio: auto !important;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+  }
+  body.printing .print-sheet .sheet-title { font-size: 16pt; height: 12mm; margin: 0; }
+  body.printing .print-sheet svg { height: var(--tree-h); flex: none; }
+  .card { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
