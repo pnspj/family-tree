@@ -1,12 +1,11 @@
 // Quiz mode: asks "which one is おばあさん?" / "what is 茂 to you?" and keeps score.
-import { useEffect, useMemo, useState } from 'preact/hooks';
-import { createKinship } from '../core/kinship';
+import { useEffect, useState } from 'preact/hooks';
 import { isCorrectFind, makeQuestion, type Label, type Question } from '../core/quiz';
 import type { FamilyFile } from '../core/types';
 import type { Script, ViewPrefs } from '../prefs';
 import { personName } from './display';
 import { Ruby } from './Ruby';
-import type { CardHidden } from './TreeDrawing';
+import { useKinship, type CardHidden } from './TreeDrawing';
 
 interface Feedback {
   ok: boolean;
@@ -17,7 +16,7 @@ interface Feedback {
 const labelText = (l: Label, script: Script) => (script === 'kana' ? l.kana : script === 'furigana' ? l.ruby : l.kanji);
 
 export function useQuiz(file: FamilyFile, prefs: ViewPrefs, active: boolean) {
-  const kin = useMemo(() => createKinship(file, file.settings.labelOverrides), [file.persons, file.unions, file.settings.labelOverrides]);
+  const kin = useKinship(file);
   const ego = file.settings.egoId;
   const kana = prefs.script === 'kana';
   const [question, setQuestion] = useState<Question | undefined>();

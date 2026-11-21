@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'preact/hooks';
-import { createKinship } from '../core/kinship';
 import { openParentUnion, parentCount, unionCount, wouldSplit, MAX_UNIONS_PER_PERSON, type PersonFields } from '../core/ops';
 import type { FamilyFile, Gender, PartialDate, Person, Union } from '../core/types';
-import { kinshipText } from './display';
+import { kinshipText, plainName } from './display';
 import { rubyBase } from '../core/kinshipMaster';
 import type { Script } from '../prefs';
 import { Modal } from './Modal';
+import { useKinship } from './TreeDrawing';
 
 export type Relation = 'first' | 'parent' | 'spouse' | 'child' | 'sibling';
 
@@ -43,7 +43,6 @@ const relationTitle: Record<Relation, string> = {
   sibling: 'きょうだいを追加',
 };
 
-const nameOf = (p?: Person) => (p ? [p.familyName, p.givenName].filter(Boolean).join(' ') || [p.familyNameKana, p.givenNameKana].filter(Boolean).join(' ') || '（なまえなし）' : '');
 
 export function PersonDialog(props: Props) {
   const { file, state } = props;
@@ -53,21 +52,21 @@ export function PersonDialog(props: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const fillUnionId = state.kind === 'add' ? state.fillUnionId : undefined;
   const [asParent, setAsParent] = useState(true);
-  const slotChildren = fillUnionId ? file.persons.filter((p) => p.childOf === fillUnionId).map(nameOf).join('・') : '';
+  const slotChildren = fillUnionId ? file.persons.filter((p) => p.childOf === fillUnionId).map(plainName).join('・') : '';
 
   const title =
     state.kind === 'edit'
-      ? nameOf(person)
+      ? plainName(person)
       : base
-        ? `${nameOf(base)} の${relationTitle[state.relation].replace('を追加', '')}を追加`
+        ? `${plainName(base)} の${relationTitle[state.relation].replace('を追加', '')}を追加`
         : relationTitle[state.relation];
 
-  const kin = useMemo(() => createKinship(file, file.settings.labelOverrides), [file]);
+  const kin = useKinship(file);
   const egoId = file.settings.egoId;
   const kinLabel = person && egoId ? rubyBase(kinshipText(kin.resolve(egoId, person.id), { script: props.script, showSide: true })) : '';
 
   return (
-    <Modal title={title} subtitle={kinLabel && egoId !== person?.id ? `${nameOf(persons.get(egoId!))} から見て：${kinLabel}` : undefined} onClose={props.onClose}>
+    <Modal title={title} subtitle={kinLabel && egoId !== person?.id ? `${plainName(persons.get(egoId!))} から見て：${kinLabel}` : undefined} onClose={props.onClose}>
       {/* Opening an existing person is mostly done to add relatives, so that comes first and gets focus. */}
       {person && <AddRelatives file={file} person={person} persons={persons} onAdd={props.onAdd} />}
       {fillUnionId && (
@@ -75,7 +74,7 @@ export function PersonDialog(props: Props) {
           <input type="checkbox" checked={asParent} onChange={() => setAsParent(!asParent)} />
           <span>
             {slotChildren} の親として追加する
-            <small>（{nameOf(base)} と夫婦で {slotChildren} の親になります。再婚相手などで親ではない場合は外してください）</small>
+            <small>（{plainName(base)} と夫婦で {slotChildren} の親になります。再婚相手などで親ではない場合は外してください）</small>
           </span>
         </label>
       )}
@@ -108,7 +107,7 @@ export function PersonDialog(props: Props) {
             ) : (
               <div class="confirm">
                 <p>
-                  {nameOf(person)} を削除します。
+                  {plainName(person)} を削除します。
                   {wouldSplit(file, person.id) && <strong> この人を削除すると、家系図が2つ以上に分かれます。</strong>}
                 </p>
                 <button type="button" class="danger" onClick={() => props.onDelete(person.id)}>
@@ -149,7 +148,7 @@ function AddRelatives(props: { file: FamilyFile; person: Person; persons: Map<st
   const spousePreset: PersonFields = slot && person.gender === 'M' ? { gender: 'F' } : slot && person.gender === 'F' ? { gender: 'M' } : {};
   // Child targets: each marriage, plus "partner unknown" when that is possible.
   const childTargets: { label: string; unionId?: string }[] = [
-    ...marriages.map((u) => ({ label: `${nameOf(partnerOf(u))} との子`, unionId: u.id })),
+    ...marriages.map((u) => ({ label: `${plainName(partnerOf(u))} との子`, unionId: u.id })),
     ...(singleUnion || canAddSpouse ? [{ label: marriages.length ? '相手不明の子' : '子', unionId: singleUnion?.id }] : []),
   ];
 
@@ -198,10 +197,10 @@ function Marriages(props: {
       <ul class="marriages">
         {marriages.map((u) => (
           <li key={u.id}>
-            <span>{nameOf(partnerOf(u))}</span>
+            <span>{plainName(partnerOf(u))}</span>
             <select
               value={u.status}
-              aria-label={`${nameOf(partnerOf(u))} との婚姻関係`}
+              aria-label={`${plainName(partnerOf(u))} との婚姻関係`}
               onChange={(e) => props.onUnionStatus(u.id, (e.target as HTMLSelectElement).value as Union['status'])}
             >
               <option value="current">現在の配偶者</option>
@@ -228,10 +227,10 @@ function Repair(props: {
   const [parentChoice, setParentChoice] = useState(person.childOf ?? '');
   const [spouseChoice, setSpouseChoice] = useState('');
   const unionLabel = (u: Union) => {
-    const names = u.partners.filter((p): p is string => !!p).map((p) => nameOf(persons.get(p)));
+    const names = u.partners.filter((p): p is string => !!p).map((p) => plainName(persons.get(p)));
     if (names.length === 2) return `${names[0]} と ${names[1]} の子`;
     if (names.length === 1) return `${names[0]} の子（もう一人の親は未登録）`;
-    const kids = file.persons.filter((p) => p.childOf === u.id && p.id !== person.id).map(nameOf);
+    const kids = file.persons.filter((p) => p.childOf === u.id && p.id !== person.id).map(plainName);
     return `親は未登録（${kids.join('・')} のきょうだい）`;
   };
   const parentOptions = file.unions.filter((u) => !u.partners.includes(person.id));
@@ -264,7 +263,7 @@ function Repair(props: {
             <option value="">選んでください</option>
             {spouseOptions.map((p) => (
               <option key={p.id} value={p.id}>
-                {nameOf(p)}
+                {plainName(p)}
               </option>
             ))}
           </select>

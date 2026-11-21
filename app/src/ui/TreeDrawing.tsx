@@ -18,6 +18,10 @@ export interface TreeModel {
   persons: Map<string, FamilyFile['persons'][number]>;
 }
 
+/** Kinship resolver for the family, recomputed only when people, unions or wording change. */
+export const useKinship = (file: FamilyFile): KinshipResolver =>
+  useMemo(() => createKinship(file, file.settings.labelOverrides), [file.persons, file.unions, file.settings.labelOverrides]);
+
 /** Layout and derived data for drawing; card height adapts to the content shown. */
 export function useTreeModel(file: FamilyFile, prefs: ViewPrefs): TreeModel {
   const nameFits = useMemo(
@@ -34,10 +38,7 @@ export function useTreeModel(file: FamilyFile, prefs: ViewPrefs): TreeModel {
     return { ...DEFAULT_LAYOUT, cardH };
   }, [prefs.script, twoLineNames, birthNames]);
   const layout = useMemo(() => computeLayout(file, opt), [file.persons, file.unions, opt]);
-  const kin = useMemo(
-    () => createKinship(file, file.settings.labelOverrides),
-    [file.persons, file.unions, file.settings.labelOverrides],
-  );
+  const kin = useKinship(file);
   const persons = useMemo(() => new Map(file.persons.map((p) => [p.id, p])), [file.persons]);
   return { layout, opt, kin, nameFits, persons };
 }
