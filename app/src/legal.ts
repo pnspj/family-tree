@@ -1,0 +1,48 @@
+// Terms / privacy consent. The consent is stored with the terms version; bumping the version
+// (together with VERSION in tools/build_legal.py) asks everyone to agree again.
+
+export const TERMS_VERSION = '2026-11-21';
+export const TERMS_URL = './terms.html';
+export const PRIVACY_URL = './privacy.html';
+
+const KEY = 'family-tree:consent';
+
+export interface Consent {
+  version: string;
+  at: string; // ISO date-time
+}
+
+export function loadConsent(): Consent | undefined {
+  try {
+    const c = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Consent | null;
+    return c && typeof c.version === 'string' ? c : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export const hasCurrentConsent = () => loadConsent()?.version === TERMS_VERSION;
+
+export function saveConsent(): Consent {
+  const c = { version: TERMS_VERSION, at: new Date().toISOString() };
+  try {
+    localStorage.setItem(KEY, JSON.stringify(c));
+  } catch {
+    // storage unavailable: consent is asked again next time
+  }
+  return c;
+}
+
+/**
+ * Asks the browser not to evict this site's storage (IndexedDB) under storage pressure.
+ * Some browsers show a permission prompt, so call it from a user action the first time.
+ */
+export async function requestPersistentStorage(): Promise<boolean | undefined> {
+  try {
+    if (!navigator.storage?.persist) return undefined;
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch {
+    return undefined;
+  }
+}

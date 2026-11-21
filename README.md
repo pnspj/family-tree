@@ -10,8 +10,9 @@
 - **へんしゅう**：人物の登録・編集、親・配偶者・子・きょうだいの追加、つながりの修正
 - 表示文字の切り替え（かんじ／ふりがな／ひらがな）、家庭ごとの呼び方（パパ・ばあば など）
 - 印刷（A4/A3、名前や続柄を空欄にした書きこみプリント）、SVG/PNG での保存
-- JSON での書き出し・読み込み（どちらも注意事項を読んで同意してから操作）
-- [しくみと注意のページ](app/public/guide.html)：アプリの仕組みと、ファイルを書き出す・渡す・読み込むときの危険と約束を、図とふりがな付きで説明（子供の学習教材にもなる。[tools/build_guide.py](tools/build_guide.py) で生成）
+- JSON での書き出し・読み込み（自分の端末の間の移動と控えのためだけ。どちらも注意事項を読んで同意してから操作）
+- 初回（と規約の改定時）に、保護者（成人）が利用規約・免責事項とプライバシーポリシーに同意してから使う
+- [しくみと注意のページ](app/public/guide.html)：アプリの仕組み、個人情報の守り方、ファイルの約束を、図とふりがな付きで説明（子供の学習教材にもなる。[tools/build_guide.py](tools/build_guide.py) で生成）
 
 ## 構成
 
@@ -35,6 +36,12 @@ npm run build   # app/dist に出力
 
 - GitHub Pages：`.github/workflows/deploy.yml` が main への push でビルド・公開します（リポジトリ設定の Pages > Source を「GitHub Actions」にする）。
 - Cloudflare Pages：ビルドコマンド `npm run build`、ルートディレクトリ `app`、出力先 `dist`。
+
+## 利用規約・プライバシーポリシー・ライセンス
+
+- [利用規約・免責事項](app/public/terms.html)、[プライバシーポリシー](app/public/privacy.html)：[tools/build_legal.py](tools/build_legal.py) で生成します。改定するときは、スクリプトの `VERSION` と [app/src/legal.ts](app/src/legal.ts) の `TERMS_VERSION` を同じ日付に上げてください（利用者に再同意を求めます。食い違いはテストで検出します）。
+- 文面は一般的な内容をもとにした下書きです。公開前に専門家の確認を受けることを想定しています。
+- ソースコードは [MIT ライセンス](LICENSE) です。利用規約は、運営者が公開するアプリの利用に適用されます。
 
 ## 注意
 

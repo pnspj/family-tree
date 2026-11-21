@@ -397,3 +397,16 @@ ruby rt { font-size: 0.55em; font-weight: 500; color: var(--muted); letter-spaci
 .agree { display: flex; gap: 0.5em; align-items: center; cursor: pointer; font-weight: 700; margin: 0.8rem 0; }
 .menu a.menu-link { display: block; padding: 0.45em 1em; border-radius: 8px; color: inherit; text-decoration: none; }
 .menu a.menu-link:hover { background: var(--accent-soft); }
+
+/* ---- consent screen ---- */
+.consent { min-height: 100%; display: flex; flex-direction: column; align-items: center; padding: calc(2rem + env(safe-area-inset-top, 0px)) 1rem 3rem; gap: 0.8rem; }
+.consent h1 { font-size: 2.4rem; margin: 0; letter-spacing: 0.1em; }
+.consent-kids { margin: 0; font-size: 1.1rem; }
+.consent-card { width: min(720px, 100%); background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.2rem 1.4rem; box-shadow: 0 6px 20px rgb(0 0 0 / 0.06); }
+.consent-card h2 { margin: 0 0 0.5rem; font-size: 1.2rem; }
+.consent-card a { color: #1d4ed8; font-weight: 700; }
+.consent-points { padding-left: 1.2em; line-height: 1.8; font-size: 0.95rem; }
+.consent-points li { margin: 0.3rem 0; }
+.consent-checks { display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0; }
+.consent-checks .check { display: flex; gap: 0.5em; align-items: flex-start; cursor: pointer; font-weight: 700; }
+.consent-checks input { width: 1.2em; height: 1.2em; margin-top: 0.25em; flex: none; accent-color: var(--accent); }

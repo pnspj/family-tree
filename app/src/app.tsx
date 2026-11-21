@@ -10,6 +10,8 @@ import { TreeView, isKinshipHidden, isNameHidden, type MaskState } from './ui/Tr
 import { Ruby } from './ui/Ruby';
 import { PrintDialog } from './ui/Print';
 import { ExportDialog, GUIDE_URL, ImportDialog } from './ui/DataDialogs';
+import { ConsentScreen } from './ui/Consent';
+import { PRIVACY_URL, TERMS_URL, hasCurrentConsent, loadConsent, requestPersistentStorage, saveConsent } from './legal';
 import { QuizBar, useQuiz } from './ui/Quiz';
 import { isKana, personName } from './ui/display';
 
@@ -29,6 +31,8 @@ export function App() {
   const [showPrint, setShowPrint] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  // Terms / privacy consent by an adult, required before anything else (re-asked when the terms change).
+  const [consented, setConsented] = useState(hasCurrentConsent);
   const [focusRequest, setFocusRequest] = useState<{ id: string } | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const focusCard = (id: string | undefined) => id && setFocusRequest({ id });
@@ -52,6 +56,10 @@ export function App() {
     return () => clearTimeout(t);
   }, [file]);
   useEffect(() => savePrefs(prefs), [prefs]);
+  // Ask the browser to keep this site's storage (no prompt in most browsers once granted).
+  useEffect(() => {
+    if (consented) requestPersistentStorage();
+  }, [consented]);
   // Close the menu on an outside click or Escape.
   useEffect(() => {
     if (!menuOpen) return;
@@ -116,6 +124,16 @@ export function App() {
     requestAnimationFrame(() => menuButton.current?.focus());
   };
 
+  if (!consented)
+    return (
+      <ConsentScreen
+        renewed={!!loadConsent()}
+        onAgree={() => {
+          saveConsent();
+          setConsented(true);
+        }}
+      />
+    );
   if (file === undefined) return <div class="loading">読み込み中…</div>;
 
   const hiddenInput = <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={onImport} />;
@@ -360,6 +378,12 @@ export function App() {
               </button>
               <a class="menu-link" href={GUIDE_URL} target="_blank" rel="noopener">
                 しくみと注意（せつめい）
+              </a>
+              <a class="menu-link" href={TERMS_URL} target="_blank" rel="noopener">
+                利用規約・免責事項
+              </a>
+              <a class="menu-link" href={PRIVACY_URL} target="_blank" rel="noopener">
+                プライバシーポリシー
               </a>
               <hr />
               <button type="button" onClick={() => guardReplace(() => replaceFile(sampleFile()))}>
