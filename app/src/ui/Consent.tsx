@@ -8,18 +8,12 @@ import { GUIDE_URL } from './DataDialogs';
 export function ConsentScreen({ renewed, onAgree }: { renewed: boolean; onAgree: () => void }) {
   const [showAbout, setShowAbout] = useState(!renewed);
   const firstCheck = useRef<HTMLInputElement>(null);
-  const kids = (
-    <p class="consent-kids">
-      はじめる まえに、<strong>おうちの ひと</strong>に この がめんを みせてね。
-    </p>
-  );
   const card = <ConsentCard renewed={renewed} onAgree={onAgree} firstCheck={firstCheck} />;
 
   if (!showAbout)
     return (
       <div class="consent">
         <h1>かけいず</h1>
-        {kids}
         {card}
         <button type="button" class="link-button" onClick={() => setShowAbout(true)}>
           このアプリについて
@@ -41,7 +35,6 @@ export function ConsentScreen({ renewed, onAgree }: { renewed: boolean; onAgree:
           はじめる
         </button>
       }
-      note={kids}
       footer={card}
     />
   );
@@ -71,7 +64,7 @@ function ConsentCard({ renewed, onAgree, firstCheck }: { renewed: boolean; onAgr
         </li>
         <li>入力する親族の情報は、その方々の個人情報です。本人の意向に配慮して扱ってください。</li>
         <li>データはブラウザの削除などで消えることがあります。控えの書き出しをおすすめします。続柄の表示は公的な用途には使えません。</li>
-        <li>お子さまが使うときは、保護者の方が見守ってください。仕組みと注意は{link(GUIDE_URL, 'せつめいのページ')}でお子さまと一緒に確認できます。</li>
+        <li>お子さまが使うときは、保護者の方が見守ってください。詳しくは「{link(GUIDE_URL, '仕組みと注意')}」のページでお子さまと一緒に確認できます。</li>
       </ul>
       <div class="consent-checks">
         <label class="check">

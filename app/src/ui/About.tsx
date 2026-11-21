@@ -11,6 +11,8 @@ import { GUIDE_URL } from './DataDialogs';
 import { isKana, personName } from './display';
 import { Ruby } from './Ruby';
 import { TreeContent, useTreeModel } from './TreeDrawing';
+// Captured from the sample family by tools/capture_form.mjs.
+import personFormShot from '../assets/person-form.png';
 import { isKinshipHidden, isNameHidden, type MaskState } from './TreeView';
 
 const PAD = 16;
@@ -18,8 +20,6 @@ const PAD = 16;
 export function AboutPage(props: {
   /** Top call to action (e.g. "はじめる" jumping to the consent card, or "かけいずに戻る"). */
   action: ComponentChildren;
-  /** Extra line under the action (e.g. a note for children). */
-  note?: ComponentChildren;
   /** Bottom part: the consent card, or a back button. */
   footer: ComponentChildren;
 }) {
@@ -28,10 +28,9 @@ export function AboutPage(props: {
     <div class="about">
       <header class="about-hero">
         <h1>かけいず</h1>
-        <p class="about-catch">知ろう、学ぼう。家族のつながり</p>
-        <p class="about-lead">インタラクティブな家系図で、お子さまが家族のつながりを理解することを手助けします。</p>
+        <p class="about-catch">さわってわかる、家族のつながり</p>
+        <p class="about-lead">お子さまが家族や親戚の関係を学べる、インタラクティブな家系図です。</p>
         <div class="about-action">{props.action}</div>
-        {props.note}
       </header>
 
       <section class="about-sec" aria-labelledby="about-kin">
@@ -55,10 +54,14 @@ export function AboutPage(props: {
           <li>旧姓や呼び名、男女以外の性別なども、柔軟に入力できます。</li>
           <li>必須の入力項目はありません。名前と生まれた年だけでも、十分に学べる家系図ができます。</li>
         </ul>
-        <div class="about-figs">
-          <AddFigure />
-          <FieldsFigure />
-        </div>
+        <figure class="about-fig about-shot">
+          <img
+            src={personFormShot}
+            alt="人物の編集画面。上に「家族を追加」のボタン（父・母・配偶者・子・きょうだい）、下に姓・名・よみ、旧姓・呼び名、性別、生年月日、没年月日の入力欄が並ぶ"
+            loading="lazy"
+          />
+          <figcaption>見本の家族の編集画面。上の「家族を追加」から、つながる人を次々に加えられます。入力欄はどれも空欄のまま保存できます。</figcaption>
+        </figure>
       </section>
 
       <section class="about-sec" aria-labelledby="about-privacy">
@@ -212,70 +215,6 @@ function KinshipDemo() {
 }
 
 // ---- figures --------------------------------------------------------------------------------
-
-/** One person card with "add" spots around it: parents, spouse, siblings, children. */
-function AddFigure() {
-  const spot = (x: number, y: number, text: string) => (
-    <g>
-      <rect x={x} y={y} width="104" height="40" rx="10" class="fig-spot" />
-      <text x={x + 52} y={y + 25} text-anchor="middle" class="fig-spot-text">
-        ＋ {text}
-      </text>
-    </g>
-  );
-  return (
-    <figure class="about-fig">
-      <svg viewBox="0 0 356 230" role="img" aria-labelledby="fig-add-t">
-        <title id="fig-add-t">1人のカードから、親・配偶者・きょうだい・子をつなげて追加していく図</title>
-        <g class="fig-link">
-          <path d="M170,58 V92" />
-          <path d="M226,115 H246" />
-          <path d="M114,115 H110" />
-          <path d="M170,138 V172" />
-        </g>
-        {spot(118, 18, '親')}
-        {spot(246, 95, '配偶者')}
-        {spot(6, 95, 'きょうだい')}
-        {spot(118, 172, '子')}
-        <rect x="114" y="92" width="112" height="46" rx="12" class="fig-card" />
-        <text x="170" y="112" text-anchor="middle" class="fig-kin">
-          本人
-        </text>
-        <text x="170" y="129" text-anchor="middle" class="fig-name">
-          山田 蓮
-        </text>
-      </svg>
-      <figcaption>カードから「家族を追加」で、つながる人を次々に加えます。</figcaption>
-    </figure>
-  );
-}
-
-/** The person form fields, all optional. */
-function FieldsFigure() {
-  const fields: [string, string][] = [
-    ['名前・よみ', '山田 蓮（やまだ れん）'],
-    ['旧姓', '鈴木'],
-    ['呼び名', 'しずおかの ばあば'],
-    ['性別', '男・女・その他（自由に記入）'],
-    ['生まれた日', '2016年（年だけでも）'],
-  ];
-  return (
-    <figure class="about-fig">
-      <dl class="fig-fields">
-        {fields.map(([k, v]) => (
-          <div key={k}>
-            <dt>{k}</dt>
-            <dd>
-              {v}
-              <span class="fig-optional">空欄でも可</span>
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <figcaption>入力欄はどれも空欄で保存できます。</figcaption>
-    </figure>
-  );
-}
 
 /** Data stays in the browser; the server only delivers the program. */
 function PrivacyFigure() {

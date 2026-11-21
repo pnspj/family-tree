@@ -44,6 +44,9 @@ describe('kinship from 蓮 (ren, 2016, M)', () => {
     expect(k.resolve('ren', 'shigeru')?.side).toBe('paternal');
     expect(k.resolve('ren', 'hiroshi')?.side).toBe('maternal');
     expect(k.resolve('ren', 'sakura')?.side).toBe('maternal');
+    // the parents themselves have no side (not 「母方の母」)
+    expect(k.resolve('ren', 'kenichi')?.side).toBeUndefined();
+    expect(k.resolve('ren', 'misaki')?.side).toBeUndefined();
   });
 });
 

@@ -108,8 +108,9 @@ export function createKinship(data: FamilyData, overrides: Record<string, LabelO
     if (c === 0) return seq.get(t)! < seq.get(r)! ? 'older' : 'younger';
     return c < 0 ? 'older' : 'younger';
   };
-  const sideOf = (firstUp?: string): Kinship['side'] => {
-    const g = firstUp ? persons.get(firstUp)?.gender : undefined;
+  /** Side through ego's parent `firstUp`; none for that parent themself (or their spouse). */
+  const sideOf = (firstUp: string | undefined, reached: string): Kinship['side'] => {
+    const g = firstUp && firstUp !== reached ? persons.get(firstUp)?.gender : undefined;
     return g === 'M' ? 'paternal' : g === 'F' ? 'maternal' : undefined;
   };
   const apply = (row: KinRow) => {
@@ -135,7 +136,7 @@ export function createKinship(data: FamilyData, overrides: Record<string, LabelO
 
     const bl = blood(ego, target);
     if (bl) {
-      const k = master(bKey(bl), genderOf(target), ageVs(target, bl.ref), sideOf(bl.firstUp));
+      const k = master(bKey(bl), genderOf(target), ageVs(target, bl.ref), sideOf(bl.firstUp, target));
       if (k) return k;
     }
     // In-law candidates through current unions, closest first.
@@ -150,7 +151,7 @@ export function createKinship(data: FamilyData, overrides: Record<string, LabelO
       if (tb && tb.a + tb.b > 0)
         cands.push({
           deg: tb.a + tb.b,
-          make: () => master(`${bKey(tb)}+S`, genderOf(target), ageVs(t.id, tb.ref), sideOf(tb.firstUp)),
+          make: () => master(`${bKey(tb)}+S`, genderOf(target), ageVs(t.id, tb.ref), sideOf(tb.firstUp, t.id)),
         });
     }
     cands.sort((x, y) => x.deg - y.deg);
