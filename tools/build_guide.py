@@ -108,7 +108,7 @@ FIG_APP = '''
   <line x1="225" y1="110" x2="395" y2="110" stroke="var(--blue)" stroke-width="3" marker-end="url(#ah)" />
   <text x="310" y="98" text-anchor="middle" class="d-blue">プログラムを とどける</text>
   <line x1="395" y1="180" x2="225" y2="180" stroke="var(--red)" stroke-width="3" stroke-dasharray="7 6" marker-end="url(#ahr)" />
-  <text x="310" y="168" text-anchor="middle" class="d-red">データは おくらない</text>
+  <text x="310" y="156" text-anchor="middle" class="d-red">データは おくらない</text>
   <g transform="translate(310 180)"><circle r="13" fill="#fff" stroke="var(--red)" stroke-width="3" /><path d="M-6,-6 L6,6 M6,-6 L-6,6" stroke="var(--red)" stroke-width="3" /></g>
 </svg>'''
 
@@ -123,7 +123,8 @@ FIG_FILE = '''
   <text x="196" y="100" text-anchor="middle" fill="var(--accent)" font-weight="800" font-size="12">かきだす</text>
   <path d="M230,55 H300 L320,75 V180 H230 Z" fill="#fff" stroke="var(--text)" stroke-width="2" />
   <path d="M300,55 V75 H320" fill="none" stroke="var(--text)" stroke-width="2" />
-  <text x="275" y="122" text-anchor="middle" class="d-title">JSON</text>
+  <text x="275" y="118" text-anchor="middle" class="d-title">JSON</text>
+  <text x="275" y="138" text-anchor="middle" class="d-small">（ジェイソン）</text>
   <text x="275" y="200" text-anchor="middle" class="d-small">ダウンロード フォルダ</text>
   <text x="275" y="218" text-anchor="middle" class="d-small">などに ほぞん</text>
   <line x1="325" y1="115" x2="365" y2="115" stroke="var(--blue)" stroke-width="3" marker-end="url(#ah)" />
@@ -152,9 +153,10 @@ FIG_ROUTE = '''
   <rect x="245" y="40" width="150" height="150" rx="14" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="2" />
   <text x="320" y="70" text-anchor="middle" class="d-title">メール・LINE・</text>
   <text x="320" y="90" text-anchor="middle" class="d-title">クラウドの サーバー</text>
-  <text x="320" y="124" text-anchor="middle" class="d-text">ファイルが</text>
-  <text x="320" y="146" text-anchor="middle" class="d-red">のこる</text>
-  <text x="320" y="172" text-anchor="middle" class="d-small">（ひとが みない きまりでも）</text>
+  <text x="320" y="120" text-anchor="middle" class="d-text">ファイルが</text>
+  <text x="320" y="142" text-anchor="middle" class="d-red">のこる</text>
+  <text x="320" y="164" text-anchor="middle" class="d-small">（かいしゃの ひとは</text>
+  <text x="320" y="179" text-anchor="middle" class="d-small">みては いけない きまり）</text>
   <rect x="475" y="60" width="150" height="110" rx="14" fill="#fff" stroke="var(--text)" stroke-width="2" />
   <text x="550" y="92" text-anchor="middle" class="d-title">うけとる ひと</text>
   <text x="550" y="116" text-anchor="middle" class="d-text">スマホの なかに</text>
@@ -209,8 +211,6 @@ FIG_FOREVER = '''
     <path d="M142,100 L246,42" /><path d="M142,100 L246,100" /><path d="M142,100 L246,158" />
     <path d="M362,42 L466,30" /><path d="M362,100 L466,80" /><path d="M362,158 L466,130" /><path d="M362,158 L466,177" />
   </g>
-  <text x="80" y="158" text-anchor="middle" class="d-red">けしゴムは</text>
-  <text x="80" y="178" text-anchor="middle" class="d-red">とどかない</text>
 </svg>'''
 
 # ---- content -----------------------------------------------------------------------------------
@@ -229,9 +229,9 @@ FIG_PERSONAL = '''
     <path d="M172,42 C260,42 280,120 330,125" marker-end="url(#ah)" /><path d="M172,100 C250,100 280,122 330,125" marker-end="url(#ah)" />
     <path d="M172,158 C250,158 280,128 330,128" marker-end="url(#ah)" /><path d="M172,216 C260,216 280,132 330,130" marker-end="url(#ah)" />
   </g>
-  <circle cx="420" cy="92" r="26" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="3" />
-  <path d="M370,170 C370,130 470,130 470,170 Z" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="3" />
-  <text x="420" y="205" text-anchor="middle" class="d-red">だれか わかって しまう！</text>
+  <circle cx="420" cy="98" r="26" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="3" />
+  <path d="M372,180 C372,116 468,116 468,180 Z" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="3" />
+  <text x="420" y="210" text-anchor="middle" class="d-red">だれか わかって しまう！</text>
   <text x="545" y="90" text-anchor="middle" class="d-small">1つ だけなら</text>
   <text x="545" y="108" text-anchor="middle" class="d-small">わからなくても</text>
   <text x="545" y="140" text-anchor="middle" class="d-small">くみあわせると</text>
@@ -255,7 +255,7 @@ TOC = [
 
 body = []
 B = body.append
-B('<h1>' + r('かけいずの{仕組|しく}みと、<br />{個人情報|こじんじょうほう}を{守|まも}るための{注意|ちゅうい}') + '</h1>')
+B('<h1>' + r('かけいずの{仕組|しく}みと、{個人情報|こじんじょうほう}を{守|まも}るための{注意|ちゅうい}') + '</h1>')
 B(p('このページでは、アプリがどうやって{動|うご}いているか、{家族|かぞく}の{個人情報|こじんじょうほう}をどう{守|まも}るかを、{図|ず}を{使|つか}って{説明|せつめい}します。おうちの{人|ひと}といっしょに、{最後|さいご}まで{読|よ}んでください。', 'lead'))
 B('<nav class="toc" aria-label="もくじ">\n<ol>\n' + '\n'.join(f'<li><a href="#{i}">{r(t)}</a></li>' for i, t in TOC) + '\n</ol>\n</nav>')
 
@@ -266,7 +266,7 @@ B(p('このアプリのサーバーが{届|とど}けるのは、アプリの<st
 B(figure(FIG_APP, 'サーバーから{届|とど}くのはプログラムだけ。かけいずのデータは、あなたのブラウザの{中|なか}にだけあります。'))
 B(p('だから、ほかのパソコンやスマホ、ほかのブラウザでは、あなたのかけいずは{見|み}えません。このアプリは、かけいずを<strong>あなたの{手元|てもと}だけ</strong>で{使|つか}うように{作|つく}られています。'))
 B(adult([
-    'このアプリは静的サイト（HTML・JavaScript だけ）として配信され、アカウントもデータ用のサーバーもありません。アクセス解析や Cookie による追跡もしていません。',
+    'このアプリは静的サイト（HTML・CSS・JavaScript だけ）として配信され、アカウントもデータ用のサーバーもありません。アクセス解析や Cookie による追跡もしていません。',
     '入力したデータはブラウザの IndexedDB に保存されます。ブラウザのデータを消去すると家系図も消えるため、書き出したファイルが控え（バックアップ）になります。',
     '詳しくは <a href="./privacy.html">プライバシーポリシー</a> をご覧ください。',
 ]))
@@ -285,10 +285,10 @@ B(adult([
 
 # 3 family
 B(h2('family', 3, TOC[2][1]))
-B(p('かけいずには、あなただけでなく、お{父|とう}さん・お{母|かあ}さん、きょうだい、おじいさん・おばあさん、おじさん・おばさん、いとこなど、<strong>たくさんの{人|ひと}の{個人情報|こじんじょうほう}</strong>が{入|はい}っています。'))
+B(p('かけいずには、あなただけでなく、お{父|とう}さん・お{母|かあ}さん、きょうだい、おじいさん・おばあさん、おじさん・おばさん、いとこなど、<strong>たくさんの{人|ひと}の{個人情報|こじんじょうほう}</strong>を{入|い}れることができます。'))
 B(p('あなたの{情報|じょうほう}はあなたのもの、おばあちゃんの{情報|じょうほう}はおばあちゃんのものです。<strong>{人|ひと}の{情報|じょうほう}は、その{人|ひと}のもの</strong>。だから、{家族|かぞく}のことでも{勝手|かって}に{広|ひろ}めてはいけません。'))
 B(checklist([
-    '{入|い}れるのは、{必要|ひつよう}なことだけにする||{続柄|つづきがら}を{学|まな}ぶには、{名前|なまえ}と{生|う}まれた{年|とし}くらいで{十分|じゅうぶん}です。',
+    '{入|い}れるのは、{必要|ひつよう}なことだけにする||{名前|なまえ}と{生|う}まれた{年|とし}があれば、{十分|じゅうぶん}に{役|やく}に{立|た}ちます。',
     '{入|い}れてもいいか、{家族|かぞく}にも{聞|き}いてみる||「おばあちゃんの{誕生日|たんじょうび}を{入|い}れてもいい？」と{聞|き}くのも{大切|たいせつ}なことです。',
     '{小|ちい}さい{子|こ}どもの{情報|じょうほう}は、とくに{大切|たいせつ}にする||{自分|じぶん}では{守|まも}れない{人|ひと}の{情報|じょうほう}は、まわりの{大人|おとな}が{守|まも}ります。',
 ]))
@@ -299,7 +299,7 @@ B(adult([
 
 # 4 file
 B(h2('file', 4, TOC[3][1]))
-B(p('メニューの「JSONで{書|か}き{出|だ}す」を{押|お}すと、ブラウザの{中|なか}のかけいずのデータが<strong>1つのファイル</strong>になって、パソコンやスマホに{保存|ほぞん}されます。これは、データが{消|き}えたときのための<strong>{控|ひか}え</strong>や、{自分|じぶん}のパソコンからスマホへの{引|ひ}っ{越|こ}しに{使|つか}います。'))
+B(p('メニューの「JSON（ジェイソン）で{書|か}き{出|だ}す」を{押|お}すと、ブラウザの{中|なか}のかけいずのデータが<strong>1つのファイル</strong>になって、パソコンやスマホに{保存|ほぞん}されます。これは、データが{消|き}えたときのための<strong>{控|ひか}え</strong>や、{自分|じぶん}のパソコンからスマホへの{引|ひ}っ{越|こ}しに{使|つか}います。'))
 B(p('このファイルは、だれでも{読|よ}める{文字|もじ}で{書|か}かれています。メモ{帳|ちょう}などで{開|ひら}くと、{名前|なまえ}や{誕生日|たんじょうび}がそのまま{見|み}えます。<strong>かぎはかかっていません</strong>。'))
 B(figure(FIG_FILE, 'ファイルを{開|ひら}くと、{家族|かぞく}の{名前|なまえ}や{誕生日|たんじょうび}がそのまま{読|よ}めます。'))
 B(point('つまり、このファイルは「{家族|かぞく}みんなの{個人情報|こじんじょうほう}のかたまり」です。{自分|じぶん}だけが{使|つか}う{場所|ばしょ}に、{大切|たいせつ}にしまっておきましょう。'))
