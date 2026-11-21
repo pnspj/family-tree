@@ -35,6 +35,7 @@ npm run build   # app/dist に出力
 ## 公開
 
 - GitHub Pages：`.github/workflows/deploy.yml` が main への push でビルド・公開します（リポジトリ設定の Pages > Source を「GitHub Actions」にする）。
+- main は保護されており、変更はプルリクエスト経由でマージします。PR ごとにテストとビルド（`build`）が走り、成功しないとマージできません。
 - Cloudflare Pages：ビルドコマンド `npm run build`、ルートディレクトリ `app`、出力先 `dist`。
 
 ## 利用規約・プライバシーポリシー・ライセンス
