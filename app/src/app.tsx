@@ -9,6 +9,7 @@ import { PersonDialog, type DialogState } from './ui/PersonDialog';
 import { TreeView, isKinshipHidden, isNameHidden, type MaskState } from './ui/TreeView';
 import { Ruby } from './ui/Ruby';
 import { PrintDialog } from './ui/Print';
+import { ExportDialog, GUIDE_URL, ImportDialog } from './ui/DataDialogs';
 import { QuizBar, useQuiz } from './ui/Quiz';
 import { isKana, personName } from './ui/display';
 
@@ -26,6 +27,8 @@ export function App() {
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [showLabels, setShowLabels] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [focusRequest, setFocusRequest] = useState<{ id: string } | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const focusCard = (id: string | undefined) => id && setFocusRequest({ id });
@@ -100,7 +103,7 @@ export function App() {
     if (!f) return;
     const r = ops.parseFamilyFile(await f.text());
     if (!r.ok) return setImportErrors(r.errors);
-    guardReplace(() => replaceFile(r.file));
+    replaceFile(r.file); // the import dialog already warned about replacing and got agreement
   };
   const openImport = () => fileInput.current?.click();
   // Cancelling a person dialog returns focus to the card it was opened from.
@@ -138,6 +141,14 @@ export function App() {
           </div>
         </Modal>
       )}
+      {showImport && (
+        <ImportDialog
+          existingCount={file?.persons.length ?? 0}
+          onExportCurrent={() => file && downloadJson(file)}
+          onChooseFile={openImport}
+          onClose={() => setShowImport(false)}
+        />
+      )}
       {importErrors && (
         <Modal title="読み込めませんでした" onClose={() => setImportErrors(null)}>
           <ul class="errors">
@@ -169,7 +180,7 @@ export function App() {
           <button type="button" onClick={() => replaceFile(sampleFile())}>
             サンプルの家族で試す
           </button>
-          <button type="button" onClick={openImport}>
+          <button type="button" onClick={() => setShowImport(true)}>
             JSONファイルを読み込む
           </button>
         </div>
@@ -341,12 +352,15 @@ export function App() {
               <button type="button" onClick={() => setShowPrint(true)}>
                 印刷・画像で保存…
               </button>
-              <button type="button" onClick={() => downloadJson(file)}>
-                JSONで書き出す
+              <button type="button" onClick={() => setShowExport(true)}>
+                JSONで書き出す…
               </button>
-              <button type="button" onClick={openImport}>
+              <button type="button" onClick={() => setShowImport(true)}>
                 JSONを読み込む…
               </button>
+              <a class="menu-link" href={GUIDE_URL} target="_blank" rel="noopener">
+                しくみと注意（せつめい）
+              </a>
               <hr />
               <button type="button" onClick={() => guardReplace(() => replaceFile(sampleFile()))}>
                 サンプルを開く…
@@ -418,6 +432,7 @@ export function App() {
           }}
         />
       )}
+      {showExport && <ExportDialog onExport={() => downloadJson(file)} onClose={closeMenuDialog(() => setShowExport(false))} />}
       {showPrint && <PrintDialog file={file} prefs={prefs} onClose={closeMenuDialog(() => setShowPrint(false))} />}
       {showLabels && (
         <LabelSettings
