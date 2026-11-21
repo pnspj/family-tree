@@ -57,10 +57,10 @@ export function AboutPage(props: {
         <figure class="about-fig about-shot">
           <img
             src={personFormShot}
-            alt="人物の編集画面。上に「家族を追加」のボタン（父・母・配偶者・子・きょうだい）、下に姓・名・よみ、旧姓・呼び名、性別、生年月日、没年月日の入力欄が並ぶ"
+            alt="人物の編集画面。上に「家族を追加」のボタン（父・母・配偶者・子・きょうだい）、その下に姓・名とよみの入力欄が並ぶ"
             loading="lazy"
           />
-          <figcaption>見本の家族の編集画面。上の「家族を追加」から、つながる人を次々に加えられます。入力欄はどれも空欄のまま保存できます。</figcaption>
+          <figcaption>見本の家族の編集画面（上半分）。「家族を追加」から、つながる人を次々に加えられます。</figcaption>
         </figure>
       </section>
 
@@ -71,7 +71,7 @@ export function AboutPage(props: {
           <li>
             「
             <a href={GUIDE_URL} target="_blank" rel="noopener">
-              しくみと注意
+              仕組みと注意
             </a>
             」のページで、お子さまがアプリの仕組みと個人情報の扱いについて学べます。
           </li>
@@ -88,7 +88,7 @@ export function AboutPage(props: {
           プライバシーポリシー
         </a>
         <a href={GUIDE_URL} target="_blank" rel="noopener">
-          しくみと注意
+          仕組みと注意
         </a>
       </p>
     </div>

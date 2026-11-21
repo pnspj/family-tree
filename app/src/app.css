@@ -425,7 +425,7 @@ ruby rt { font-size: 0.55em; font-weight: 500; color: var(--muted); letter-spaci
 .about-points { margin: 0 0 1.2rem; padding-left: 1.3em; line-height: 1.85; }
 .about-points li { margin: 0.2rem 0; }
 .about-footer { display: flex; flex-direction: column; align-items: center; }
-.about-footer .consent-card { scroll-margin-top: 1rem; }
+.about-footer .consent-card { width: 100%; scroll-margin-top: 1rem; }
 .about-back { display: flex; justify-content: center; }
 .about-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem 1.4rem; margin: -1rem 0 0; font-size: 0.9rem; }
 

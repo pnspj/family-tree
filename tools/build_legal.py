@@ -50,7 +50,7 @@ def page(title: str, body: str) -> str:
 <nav class="links" aria-label="関連ページ">
   <a href="./terms.html">利用規約・免責事項</a>
   <a href="./privacy.html">プライバシーポリシー</a>
-  <a href="./guide.html">しくみと注意（せつめい）</a>
+  <a href="./guide.html">仕組みと注意</a>
   <a href="./">アプリに戻る</a>
 </nav>
 </main>

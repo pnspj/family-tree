@@ -20,9 +20,9 @@ await p.locator('[data-person-id="misaki"]').click();
 const modal = p.locator('.modal');
 await modal.waitFor();
 await p.locator('.modal input').first().blur();
-// From the top of the dialog down to the save button.
+// Top half of the dialog: "add relatives" and the name fields (down to the readings).
 const m = await modal.boundingBox();
-const save = await p.getByRole('button', { name: '保存する' }).boundingBox();
-await p.screenshot({ path: out, clip: { x: m.x, y: m.y, width: m.width, height: save.y + save.height + 16 - m.y } });
+const kana = await p.getByLabel('なまえ', { exact: true }).boundingBox();
+await p.screenshot({ path: out, clip: { x: m.x, y: m.y, width: m.width, height: kana.y + kana.height + 10 - m.y } });
 await b.close();
 console.log('wrote', out);

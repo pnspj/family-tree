@@ -415,7 +415,7 @@ export function App() {
                 このアプリについて
               </button>
               <a class="menu-link" href={GUIDE_URL} target="_blank" rel="noopener">
-                しくみと注意（せつめい）
+                仕組みと注意
               </a>
               <a class="menu-link" href={TERMS_URL} target="_blank" rel="noopener">
                 利用規約・免責事項
