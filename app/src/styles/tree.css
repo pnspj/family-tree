@@ -14,22 +14,46 @@ svg.tree:active { cursor: grabbing; }
   gap: 2px;
   padding: 4px 6px;
   border-radius: var(--radius);
-  border: 2px solid var(--other);
-  background: var(--other-bg);
+  border: 2px solid var(--card-border);
+  background: var(--card-bg);
   overflow: hidden;
   text-align: center;
   line-height: 1.25;
-  transition: transform 0.12s ease;
+  transition: box-shadow 0.12s ease;
+  --card-border: var(--other);
+  --card-bg: var(--other-bg);
+  --kin-color: var(--accent);
+  --sub-color: var(--muted);
 }
-.card.g-M { border-color: var(--male); background: var(--male-bg); }
-.card.g-F { border-color: var(--female); background: var(--female-bg); }
-.card.deceased { opacity: 0.55; border-style: dashed; }
+.card.g-M { --card-border: var(--male); --card-bg: var(--male-bg); }
+.card.g-F { --card-border: var(--female); --card-bg: var(--female-bg); }
+/*
+ * No opacity or transform on anything inside a card: iOS Safari composites such HTML in a
+ * foreignObject on its own layer, which then ignores the pan / zoom transform of the tree.
+ * Deceased people are faded by mixing every colour with the page background instead.
+ */
+.card.deceased {
+  border-style: dashed;
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+  --card-border: color-mix(in srgb, var(--other) 55%, transparent);
+  --card-bg: color-mix(in srgb, var(--other-bg) 55%, transparent);
+  --kin-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  --sub-color: color-mix(in srgb, var(--muted) 55%, transparent);
+}
+.card.deceased.g-M {
+  --card-border: color-mix(in srgb, var(--male) 55%, transparent);
+  --card-bg: color-mix(in srgb, var(--male-bg) 55%, transparent);
+}
+.card.deceased.g-F {
+  --card-border: color-mix(in srgb, var(--female) 55%, transparent);
+  --card-bg: color-mix(in srgb, var(--female-bg) 55%, transparent);
+}
 .card.is-ego { border-width: 4px; box-shadow: inset 0 0 0 2px #fff; }
 
 .card .kin {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--kin-color);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -40,17 +64,17 @@ svg.tree:active { cursor: grabbing; }
 }
 .card .kin.long { font-size: 0.68rem; font-weight: 600; }
 .card.path .kin { font-weight: 500; }
-.card.is-ego .kin { color: #fff; background: var(--accent); border-radius: 999px; padding: 0 0.6em; }
+.card.is-ego .kin { color: #fff; background: var(--kin-color); border-radius: 999px; padding: 0 0.6em; }
 .card.two-line-name .kin { -webkit-line-clamp: 1; }
-.card .kin ruby rt { color: inherit; opacity: 0.85; }
+.card .kin ruby rt { color: color-mix(in srgb, currentColor 85%, transparent); }
 .card.is-ego .kin ruby rt { color: #fff; }
 
 .card .name { font-size: 1rem; font-weight: 700; max-width: 100%; display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
 .card .name-line { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card .name.size-s { font-size: 0.86rem; }
 .card .name.size-xs { font-size: 0.74rem; }
-.card .life { font-size: 0.7rem; color: var(--muted); white-space: nowrap; }
-.card .birth-name { font-size: 0.68rem; color: var(--muted); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.card .life { font-size: 0.7rem; color: var(--sub-color); white-space: nowrap; }
+.card .birth-name { font-size: 0.68rem; color: var(--sub-color); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 
 .script-furigana .card .name { line-height: 1.6; }
 .script-furigana .card .kin { line-height: 1.6; -webkit-line-clamp: 1; }
@@ -67,17 +91,19 @@ svg.tree:active { cursor: grabbing; }
   letter-spacing: 0.15em;
 }
 .card .kin.masked { min-width: 2.5em; }
+.card.deceased .masked { background: color-mix(in srgb, #e6ddd3 55%, transparent); color: color-mix(in srgb, #8f857c 55%, transparent); }
 .card.has-mask { border-style: dotted; }
-.card.has-mask:hover { transform: scale(1.03); }
+.card.has-mask:hover { box-shadow: 0 0 0 3px var(--card-border); }
 .card.blanks .masked { background: #fff; border: 1.5px dashed #b9afa5; min-width: 6.5em; min-height: 1.3em; border-radius: 6px; }
 .card.blanks .kin.masked { min-width: 4.5em; }
 
 /* ---- quiz mode feedback ---- */
-.card.quiz-target { outline: 4px solid var(--accent); outline-offset: -4px; animation: pulse 1.2s ease-in-out infinite; }
+.card.quiz-target { position: relative; outline: 4px solid var(--accent); outline-offset: -4px; animation: pulse 1.2s ease-in-out infinite; }
 .card.quiz-correct { border-color: var(--ok) !important; box-shadow: inset 0 0 0 3px var(--ok); background: var(--ok-bg) !important; }
-.card.quiz-wrong { border-color: var(--danger) !important; background: var(--danger-bg) !important; animation: shake 0.35s; }
-@keyframes pulse { 50% { transform: scale(1.04); } }
-@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.card.quiz-wrong { position: relative; border-color: var(--danger) !important; background: var(--danger-bg) !important; animation: shake 0.35s; }
+/* Animate outline and offsets, not transform (see the iOS note above). */
+@keyframes pulse { 50% { outline-color: color-mix(in srgb, var(--accent) 45%, #fff); outline-width: 7px; } }
+@keyframes shake { 25% { left: -4px; } 75% { left: 4px; } }
 @media (prefers-reduced-motion: reduce) { .card.quiz-target, .card.quiz-wrong { animation: none; } }
 
 /* Cards sit in a fixed-size foreignObject, so draw the focus ring inside the card. */
