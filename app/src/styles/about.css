@@ -8,6 +8,17 @@
 .about-action { margin-top: 0.6rem; }
 .about-start { padding: 0.8em 3em; font-size: 1.15rem; border-radius: 999px; }
 .about-sec h2 { margin: 0 0 0.8rem; font-size: clamp(1.25rem, 3.6vw, 1.6rem); line-height: 1.5; padding-left: 0.7rem; border-left: 6px solid var(--accent); }
+.about-age { margin: -0.2rem 0 0.8rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.6rem; font-size: 0.9rem; color: var(--muted); }
+.about-age-badge { display: inline-block; padding: 0.1em 0.8em; border-radius: 999px; background: var(--accent-soft); color: #9a4a12; font-size: 0.85rem; font-weight: 800; white-space: nowrap; }
+
+/* ---- the three age stages under the hero ---- */
+.about-stages-title { margin: 0 0 0.6rem; text-align: center; font-weight: 800; }
+.about-stages ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.6rem; counter-reset: stage; }
+.about-stages li { counter-increment: stage; }
+.about-stages a { height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem; padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); text-decoration: none; box-shadow: var(--shadow-card); }
+.about-stages a:hover { border-color: var(--accent); }
+.about-stage-title::before { content: counter(stage) '. '; color: var(--accent); }
+.about-sec h2 { scroll-margin-top: 1rem; }
 .about-points { margin: 0 0 1.2rem; padding-left: 1.3em; line-height: 1.85; }
 .about-points li { margin: 0.2rem 0; }
 .about-footer { display: flex; flex-direction: column; align-items: center; }

@@ -15,6 +15,48 @@ import personFormShot from '../assets/person-form.png';
 
 const PAD = 16;
 
+/** The page's three sections, one per age group, in the order children grow into them. */
+const STAGES = [
+  { id: 'about-kin', age: '未就学児〜小学校低学年', what: '見て、さわって、呼び方を覚える', title: 'タップで変わる続柄' },
+  { id: 'about-make', age: '小学校中学年〜', what: '自分で入力して、家族を広げる', title: '我が家の家系図づくり' },
+  { id: 'about-privacy', age: '小学校高学年〜', what: 'データの扱い方と、守り方を知る', title: '個人情報のしくみと守り方' },
+] as const;
+type StageId = (typeof STAGES)[number]['id'];
+
+/** Small "rough age" line under a section heading. */
+function AgeNote(props: { id: StageId }) {
+  const st = STAGES.find((x) => x.id === props.id)!;
+  return (
+    <p class="about-age">
+      <span class="about-age-badge">めやす：{st.age}</span>
+      <span>{st.what}</span>
+    </p>
+  );
+}
+
+/** Links to the three sections. Scrolls in place: the URL hash is the page route (#about). */
+function StageNav() {
+  const go = (e: Event, id: string) => {
+    e.preventDefault();
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  return (
+    <nav class="about-stages" aria-labelledby="about-stages-title">
+      <p id="about-stages-title" class="about-stages-title">お子さまの成長に合わせて、3つの楽しみ方</p>
+      <ol>
+        {STAGES.map((st) => (
+          <li key={st.id}>
+            <a href={`#${st.id}`} onClick={(e) => go(e, st.id)}>
+              <span class="about-age-badge">{st.age}</span>
+              <span class="about-stage-title">{st.title}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
 export function AboutPage(props: {
   /** Top call to action (e.g. "はじめる" jumping to the consent card, or "かけいずに戻る"). */
   action: ComponentChildren;
@@ -31,26 +73,36 @@ export function AboutPage(props: {
         <div class="about-action">{props.action}</div>
       </header>
 
+      <StageNav />
+
       <section class="about-sec" aria-labelledby="about-kin">
         <h2 id="about-kin">
-          あの仲良しのおじさんとの関係は？
+          ぼくのおばあちゃんを、お母さんから見ると？
           <br />
           タップで変わる続柄
         </h2>
+        <AgeNote id="about-kin" />
         <ul class="about-points">
           <li>タップ（クリック）した人を「本人」にして、続柄の表示が切り替わります。</li>
           <li>名前や続柄は、かんたんなひらがなでも表示できます。呼び方はご家庭に合わせて変えられます。</li>
           <li>名前や続柄を隠して、クイズで遊ぶこともできます。</li>
+          <li>印刷して、名前や続柄を空欄にした書きこみプリントにもできます。</li>
         </ul>
         <KinshipDemo />
       </section>
 
       <section class="about-sec" aria-labelledby="about-make">
-        <h2 id="about-make">作ってみよう！ 我が家の家系図</h2>
+        <h2 id="about-make">
+          タイピングに慣れてきたら、作ってみよう！
+          <br />
+          我が家の家系図
+        </h2>
+        <AgeNote id="about-make" />
         <ul class="about-points">
           <li>直感的な編集画面で、つなげるように次々と家族を加えていけます。</li>
           <li>旧姓や呼び名、男女以外の性別なども、柔軟に入力できます。</li>
           <li>必須の入力項目はありません。名前と生まれた年だけでも、十分に学べる家系図ができます。</li>
+          <li>よみを入れておくと、ひらがな表示で小さい子も読めます。上の子が作って、下の子が遊ぶこともできます。</li>
         </ul>
         <figure class="about-fig about-shot">
           <img
@@ -63,7 +115,12 @@ export function AboutPage(props: {
       </section>
 
       <section class="about-sec" aria-labelledby="about-privacy">
-        <h2 id="about-privacy">個人情報の管理について</h2>
+        <h2 id="about-privacy">
+          大切な家族の個人情報、
+          <br />
+          しくみを学んで、しっかり守ろう
+        </h2>
+        <AgeNote id="about-privacy" />
         <ul class="about-points">
           <li>家系図のデータは、お使いの端末のブラウザの中だけに保存し、外部へは送信しません。</li>
           <li>
@@ -71,7 +128,7 @@ export function AboutPage(props: {
             <a href={GUIDE_URL} target="_blank" rel="noopener">
               仕組みと注意
             </a>
-            」のページで、お子さまがアプリの仕組みと個人情報の扱いについて学べます。
+            」のページは、ふりがなと図付きで、お子さまと一緒に読めます。アプリの仕組みと個人情報の扱いを、親子で学べます。
           </li>
         </ul>
         <PrivacyFigure />
@@ -95,6 +152,11 @@ export function AboutPage(props: {
 
 // ---- live demo ------------------------------------------------------------------------------
 
+// The first section's heading asks how "my grandmother" looks from my mother: on the starting
+// family, the hint suggests tapping her (the two grandmothers become 母 and 義母).
+const DEMO_EGO = 'ren';
+const DEMO_MOTHER = 'misaki';
+
 /** The real tree drawing with a small fictional family. Kept in memory only (never saved). */
 function KinshipDemo() {
   const start = (): View => ({ file: demoFile(), reveal: NO_REVEAL });
@@ -107,6 +169,7 @@ function KinshipDemo() {
   const { layout } = model;
   const egoId = file.settings.egoId;
   const ego = file.persons.find((p) => p.id === egoId);
+  const mother = file.persons.find((p) => p.id === DEMO_MOTHER);
   const kana = isKana(prefs);
   const masks = masksFor(prefs);
   const reset = () => {
@@ -144,6 +207,11 @@ function KinshipDemo() {
           {masks
             ? '　カードを押すと答えが出ます。もう一度押すと、その人から見た続柄に切り替わります。'
             : '　カードを押すと、その人から見た続柄に切り替わります。'}
+          {!masks && egoId === DEMO_EGO && mother && (
+            <>
+              お母さん（<Ruby text={personName(mother, prefs)} />）を押して、2人のおばあちゃんの続柄を見比べてみよう。
+            </>
+          )}
         </span>
       </p>
       <p class="demo-swipe hint">← 左右にスクロールできます →</p>
